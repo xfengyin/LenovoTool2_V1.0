@@ -1,0 +1,58 @@
+[project]
+name = "lenovo-battery-tool"
+version = "2.0.0"
+description = "Lenovo Battery Intelligent Platform - monitor, diagnose, and predict battery health"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # UI & Core
+    "PySide6>=6.6.0",
+    "pyqtgraph>=0.13.0",
+    "PyYAML>=6.0",
+    # Data Processing
+    "numpy>=2.2.0",
+    "pandas>=2.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "ruff>=0.9.0",
+    "mypy>=1.14.0",
+    "black>=25.0.0",
+    "isort>=6.0.0",
+    "coverage>=7.6.0",
+]
+
+[project.scripts]
+lenovo-battery-tool = "lenovo_tool.main:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"
+
+[tool.ruff]
+line-length = 79
+target-version = "py312"
+select = ["E", "F", "I", "N", "W", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.uv]
+dev-dependencies = ["pytest>=8.3.0", "pytest-asyncio>=0.24.0", "ruff>=0.9.0", "mypy>=1.14.0"]
+
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true

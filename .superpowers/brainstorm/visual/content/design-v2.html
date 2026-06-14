@@ -1,0 +1,279 @@
+﻿<div style="max-width:1300px;margin:0 auto;padding:20px">
+<h2 style="color:#00d4aa;margin-bottom:4px">方案C: 全屏铺满式监控大屏</h2>
+<p class="subtitle" style="margin-bottom:20px">核心理念：整个窗口100%填满，零空白，真正的大屏效果</p>
+
+<div class="section">
+<h3>与之前方案的根本区别</h3>
+<p style="color:#aaa;font-size:13px">之前的方案用4列网格，底部面板只有3个小卡片，导致大面积空白。新方案：<b>去掉所有面板边界</b>，整个窗口是一个连续的数据流。</p>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">预览: 全屏铺满式 1400x820</div>
+  <div class="mockup-body" style="background:#0d1520;padding:8px;font-size:11px;font-family:monospace;color:#00e5c8">
+    <!-- 控制栏 -->
+    <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:6px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="background:#00d4aa;color:#0d1520;padding:3px 10px;border-radius:4px;font-size:10px;font-weight:bold">▶ 开始监控</span>
+        <span style="background:#c62828;color:#fff;padding:3px 10px;border-radius:4px;font-size:10px">■ 结束</span>
+        <span style="background:#1a2a3a;padding:3px 10px;border-radius:4px;font-size:10px">📊 图表</span>
+        <span style="background:#1a2a3a;padding:3px 10px;border-radius:4px;font-size:10px">📋 日志</span>
+      </div>
+      <span style="color:#00d4aa;font-size:14px;font-weight:bold">🔋 电池监控大屏</span>
+      <div style="display:flex;gap:8px">
+        <span style="background:#1a2a3a;padding:3px 10px;border-radius:4px;font-size:10px;border:1px solid #00d4aa">⚡ 智能快充</span>
+        <span style="background:#1a2a3a;padding:3px 10px;border-radius:4px;font-size:10px">🌙 夜间充电</span>
+      </div>
+    </div>
+
+    <!-- 8个关键数值 - 占满整行 -->
+    <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:6px">
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #00e5c8"><div style="color:#7a8fa3;font-size:9px">电压 mV</div><div style="color:#00e5c8;font-size:16px;font-weight:bold;font-family:Consolas">13,761</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #ffab40"><div style="color:#7a8fa3;font-size:9px">电流 mA</div><div style="color:#ffab40;font-size:16px;font-weight:bold;font-family:Consolas">-1,200</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #e040fb"><div style="color:#7a8fa3;font-size:9px">温度 ℃</div><div style="color:#e0e8f0;font-size:16px;font-weight:bold;font-family:Consolas">35.2</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #ff5252"><div style="color:#7a8fa3;font-size:9px">功率 W</div><div style="color:#ff5252;font-size:16px;font-weight:bold;font-family:Consolas">16.5</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #448aff"><div style="color:#7a8fa3;font-size:9px">FCC mAh</div><div style="color:#00e5c8;font-size:16px;font-weight:bold;font-family:Consolas">5,495</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #448aff"><div style="color:#7a8fa3;font-size:9px">RM mAh</div><div style="color:#00e5c8;font-size:16px;font-weight:bold;font-family:Consolas">1,593</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #00e676"><div style="color:#7a8fa3;font-size:9px">DC mAh</div><div style="color:#00e5c8;font-size:16px;font-weight:bold;font-family:Consolas">6,200</div></div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:6px;text-align:center;border-left:3px solid #00e676"><div style="color:#7a8fa3;font-size:9px">DV mV</div><div style="color:#00e5c8;font-size:16px;font-weight:bold;font-family:Consolas">14,138</div></div>
+    </div>
+
+    <!-- 主区域: 3列，全部填满 -->
+    <div style="display:grid;grid-template-columns:1.2fr 2fr 1fr;gap:6px;margin-bottom:6px">
+      
+      <!-- 左列: Cell电压 + 容量 + SOH + PL -->
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <!-- Cell电压 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px;flex:1">
+          <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:8px;border-bottom:1px solid #2a3f55;padding-bottom:4px">电池 Cell 电压</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;gap:6px"><span style="color:#7a8fa3;font-size:10px;width:36px">Cell1</span><div style="flex:1;height:16px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:85%;height:100%;background:linear-gradient(90deg,#00e676,#00e676 85%,#1a2a3a 85%);border-radius:3px"></div></div><span style="color:#00e5c8;font-size:10px;font-family:Consolas;width:44px;text-align:right">4200</span></div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="color:#7a8fa3;font-size:10px;width:36px">Cell2</span><div style="flex:1;height:16px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:82%;height:100%;background:linear-gradient(90deg,#00e676,#00e676 82%,#1a2a3a 82%);border-radius:3px"></div></div><span style="color:#00e5c8;font-size:10px;font-family:Consolas;width:44px;text-align:right">4198</span></div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="color:#7a8fa3;font-size:10px;width:36px">Cell3</span><div style="flex:1;height:16px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:84%;height:100%;background:linear-gradient(90deg,#00e676,#00e676 84%,#1a2a3a 84%);border-radius:3px"></div></div><span style="color:#00e5c8;font-size:10px;font-family:Consolas;width:44px;text-align:right">4199</span></div>
+            <div style="display:flex;align-items:center;gap:6px"><span style="color:#7a8fa3;font-size:10px;width:36px">Cell4</span><div style="flex:1;height:16px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:86%;height:100%;background:linear-gradient(90deg,#00e676,#00e676 86%,#1a2a3a 86%);border-radius:3px"></div></div><span style="color:#00e5c8;font-size:10px;font-family:Consolas;width:44px;text-align:right">4201</span></div>
+          </div>
+          <!-- 容量条 -->
+          <div style="margin-top:8px;border-top:1px solid #2a3f55;padding-top:6px">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px;width:36px">容量</span><div style="flex:1;height:20px;background:#1a2a3a;border-radius:4px;overflow:hidden"><div style="width:29%;height:100%;background:linear-gradient(90deg,#448aff,#448aff 29%,#1a2a3a 29%);border-radius:4px;display:flex;align-items:center;padding-left:6px"><span style="color:#fff;font-size:9px;font-weight:bold">29%</span></div></div><span style="color:#448aff;font-size:10px;font-family:Consolas;width:60px;text-align:right">1593/5495</span></div>
+          </div>
+          <!-- SOH条 -->
+          <div style="margin-top:4px">
+            <div style="display:flex;align-items:center;gap:6px"><span style="color:#7a8fa3;font-size:10px;width:36px">SOH</span><div style="flex:1;height:20px;background:#1a2a3a;border-radius:4px;overflow:hidden"><div style="width:75%;height:100%;background:linear-gradient(90deg,#00e676,#00e676 75%,#1a2a3a 75%);border-radius:4px;display:flex;align-items:center;padding-left:6px"><span style="color:#fff;font-size:9px;font-weight:bold">75%</span></div></div><span style="color:#00e676;font-size:10px;font-family:Consolas;width:60px;text-align:right">75%</span></div>
+          </div>
+        </div>
+        
+        <!-- 功率限制 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px">
+          <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:6px">功率限制</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+            <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">PL1 长时</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">45</div><div style="color:#7a8fa3;font-size:8px">W</div></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">PL2 短时</div><div style="color:#ffab40;font-size:14px;font-weight:bold">65</div><div style="color:#7a8fa3;font-size:8px">W</div></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">PL4 极限</div><div style="color:#ff5252;font-size:14px;font-weight:bold">90</div><div style="color:#7a8fa3;font-size:8px">W</div></div>
+          </div>
+        </div>
+        
+        <!-- 充电状态 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px">
+          <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:6px">运行状态</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10px">
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">⚡ 充电状态</span><span style="color:#00e676;font-weight:bold">充电中</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">🔄 循环次数</span><span style="color:#e0e8f0;font-weight:bold">156</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">⏱ 运行时长</span><span style="color:#e0e8f0;font-weight:bold">12分30秒</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">📅 首次使用</span><span style="color:#e0e8f0;font-weight:bold">2024-01</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">🌡 最高温度</span><span style="color:#ffab40;font-weight:bold">52.3℃</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:#7a8fa3">⚖ 电压范围</span><span style="color:#e0e8f0;font-weight:bold">12.1~14.2V</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中间: 6个迷你趋势图 (3x2) -->
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px;display:flex;flex-direction:column">
+        <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:8px;display:flex;justify-content:space-between;border-bottom:1px solid #2a3f55;padding-bottom:4px">
+          <span>实时趋势</span>
+          <span style="color:#7a8fa3;font-size:9px">60秒窗口</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;gap:6px;flex:1">
+          <!-- 电压图 -->
+          <div style="background:#1a2a3a;border-radius:6px;padding:8px;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px">电压</span><span style="color:#00e5c8;font-size:12px;font-weight:bold;font-family:Consolas">13,761<span style="font-size:8px;color:#7a8fa3"> mV</span></span></div>
+            <div style="flex:1;min-height:40px;position:relative">
+              <svg width="100%" height="100%" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <defs><linearGradient id="gV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00e5c8" stop-opacity="0.4"/><stop offset="1" stop-color="#00e5c8" stop-opacity="0.02"/></linearGradient></defs>
+                <polygon points="0,45 30,40 60,35 90,30 120,28 150,22 180,18 200,12 200,60 0,60" fill="url(#gV)"/>
+                <polyline points="0,45 30,40 60,35 90,30 120,28 150,22 180,18 200,12" fill="none" stroke="#00e5c8" stroke-width="2"/>
+                <circle cx="200" cy="12" r="3" fill="#00e5c8"/>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#7a8fa3;font-size:7px;margin-top:2px"><span>60s前</span><span>现在</span></div>
+          </div>
+          <!-- 电流图 -->
+          <div style="background:#1a2a3a;border-radius:6px;padding:8px;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px">电流</span><span style="color:#ffab40;font-size:12px;font-weight:bold;font-family:Consolas">-1,200<span style="font-size:8px;color:#7a8fa3"> mA</span></span></div>
+            <div style="flex:1;min-height:40px">
+              <svg width="100%" height="100%" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <polyline points="0,10 30,15 60,20 90,18 120,25 150,22 180,30 200,35" fill="none" stroke="#ffab40" stroke-width="2"/>
+                <circle cx="200" cy="35" r="3" fill="#ffab40"/>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#7a8fa3;font-size:7px;margin-top:2px"><span>60s前</span><span>现在</span></div>
+          </div>
+          <!-- RSOC图 -->
+          <div style="background:#1a2a3a;border-radius:6px;padding:8px;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px">RSOC</span><span style="color:#448aff;font-size:12px;font-weight:bold;font-family:Consolas">29<span style="font-size:8px;color:#7a8fa3">%</span></span></div>
+            <div style="flex:1;min-height:40px">
+              <svg width="100%" height="100%" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <defs><linearGradient id="gR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#448aff" stop-opacity="0.3"/><stop offset="1" stop-color="#448aff" stop-opacity="0.02"/></linearGradient></defs>
+                <polygon points="0,20 40,22 80,25 120,28 160,32 200,35 200,60 0,60" fill="url(#gR)"/>
+                <polyline points="0,20 40,22 80,25 120,28 160,32 200,35" fill="none" stroke="#448aff" stroke-width="2"/>
+                <circle cx="200" cy="35" r="3" fill="#448aff"/>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#7a8fa3;font-size:7px;margin-top:2px"><span>60s前</span><span>现在</span></div>
+          </div>
+          <!-- 温度图 -->
+          <div style="background:#1a2a3a;border-radius:6px;padding:8px;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px">温度</span><span style="color:#e040fb;font-size:12px;font-weight:bold;font-family:Consolas">35.2<span style="font-size:8px;color:#7a8fa3"> ℃</span></span></div>
+            <div style="flex:1;min-height:40px">
+              <svg width="100%" height="100%" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <polyline points="0,25 40,22 80,18 120,20 160,16 200,14" fill="none" stroke="#e040fb" stroke-width="2"/>
+                <circle cx="200" cy="14" r="3" fill="#e040fb"/>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#7a8fa3;font-size:7px;margin-top:2px"><span>60s前</span><span>现在</span></div>
+          </div>
+          <!-- 功率图 -->
+          <div style="background:#1a2a3a;border-radius:6px;padding:8px;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px">功率</span><span style="color:#ff5252;font-size:12px;font-weight:bold;font-family:Consolas">16.5<span style="font-size:8px;color:#7a8fa3"> W</span></span></div>
+            <div style="flex:1;min-height:40px">
+              <svg width="100%" height="100%" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <defs><linearGradient id="gP" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5252" stop-opacity="0.3"/><stop offset="1" stop-color="#ff5252" stop-opacity="0.02"/></linearGradient></defs>
+                <polygon points="0,40 40,35 80,30 120,32 160,25 200,20 200,60 0,60" fill="url(#gP)"/>
+                <polyline points="0,40 40,35 80,30 120,32 160,25 200,20" fill="none" stroke="#ff5252" stroke-width="2"/>
+                <circle cx="200" cy="20" r="3" fill="#ff5252"/>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#7a8fa3;font-size:7px;margin-top:2px"><span>60s前</span><span>现在</span></div>
+          </div>
+          <!-- SOH趋势图 -->
+          <div style="background:#1a2a3a;border-radius:6px;padding:8px;display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:#7a8fa3;font-size:10px">SOH趋势</span><span style="color:#00e676;font-size:12px;font-weight:bold;font-family:Consolas">75<span style="font-size:8px;color:#7a8fa3">%</span></span></div>
+            <div style="flex:1;min-height:40px">
+              <svg width="100%" height="100%" viewBox="0 0 200 60" preserveAspectRatio="none">
+                <defs><linearGradient id="gS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00e676" stop-opacity="0.3"/><stop offset="1" stop-color="#00e676" stop-opacity="0.02"/></linearGradient></defs>
+                <polygon points="0,8 40,10 80,12 120,14 160,17 200,20 200,60 0,60" fill="url(#gS)"/>
+                <polyline points="0,8 40,10 80,12 120,14 160,17 200,20" fill="none" stroke="#00e676" stroke-width="2"/>
+                <circle cx="200" cy="20" r="3" fill="#00e676"/>
+              </svg>
+            </div>
+            <div style="display:flex;justify-content:space-between;color:#7a8fa3;font-size:7px;margin-top:2px"><span>60s前</span><span>现在</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右列: 圆环 + 会话统计 + 预测 -->
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <!-- 圆环 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px">
+          <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:8px;text-align:center">健康指标</div>
+          <div style="display:flex;justify-content:space-around;align-items:center">
+            <div style="text-align:center">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#1a2a3a" stroke-width="7"/>
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#448aff" stroke-width="7" stroke-dasharray="201" stroke-dashoffset="142.7" stroke-linecap="round" transform="rotate(-90 40 40)"/>
+                <text x="40" y="37" text-anchor="middle" fill="#e0e8f0" font-size="16" font-weight="bold" font-family="Consolas">29</text>
+                <text x="40" y="50" text-anchor="middle" fill="#7a8fa3" font-size="8">%</text>
+              </svg>
+              <div style="color:#448aff;font-size:9px;margin-top:2px;font-weight:bold">RSOC</div>
+            </div>
+            <div style="text-align:center">
+              <svg width="80" height="80" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#1a2a3a" stroke-width="7"/>
+                <circle cx="40" cy="40" r="32" fill="none" stroke="#00e676" stroke-width="7" stroke-dasharray="201" stroke-dashoffset="50.3" stroke-linecap="round" transform="rotate(-90 40 40)"/>
+                <text x="40" y="37" text-anchor="middle" fill="#e0e8f0" font-size="16" font-weight="bold" font-family="Consolas">75</text>
+                <text x="40" y="50" text-anchor="middle" fill="#7a8fa3" font-size="8">%</text>
+              </svg>
+              <div style="color:#00e676;font-size:9px;margin-top:2px;font-weight:bold">SOH</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 会话统计 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px;flex:1">
+          <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:6px">会话统计</div>
+          <div style="display:flex;flex-direction:column;gap:3px;font-size:10px">
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">采样次数</span><span style="color:#e0e8f0;font-weight:bold;font-family:Consolas">42</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">平均电压</span><span style="color:#00e5c8;font-weight:bold;font-family:Consolas">13,761 mV</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">平均电流</span><span style="color:#ffab40;font-weight:bold;font-family:Consolas">-1,200 mA</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2a3a"><span style="color:#7a8fa3">平均温度</span><span style="color:#e0e8f0;font-weight:bold;font-family:Consolas">35.2℃</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0"><span style="color:#7a8fa3">平均功率</span><span style="color:#ff5252;font-weight:bold;font-family:Consolas">16.5 W</span></div>
+          </div>
+        </div>
+
+        <!-- 寿命预测 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:10px;text-align:center">
+          <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:4px">预计可用寿命</div>
+          <div style="color:#00e5c8;font-size:36px;font-weight:bold;font-family:Consolas;line-height:1">18</div>
+          <div style="color:#7a8fa3;font-size:10px">月</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部状态栏 -->
+    <div style="background:#162230;border:1px solid #2a3f55;border-radius:4px;padding:4px 12px;display:flex;justify-content:space-between;align-items:center;font-size:10px">
+      <div style="display:flex;gap:16px;color:#7a8fa3">
+        <span>采样: <b style="color:#e0e8f0">42</b></span>
+        <span>温度: <b style="color:#00e676">35.2℃</b></span>
+        <span>RSOC: <b style="color:#448aff">29%</b></span>
+        <span>SOH: <b style="color:#00e676">75%</b></span>
+      </div>
+      <span style="color:#00d4aa">10:49:32 | 13761mV -1200mA 35.2℃ RSOC=29% SOH=75% 预测=18月</span>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px">
+<h3>关键设计决策</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <div style="background:#1a2a3a;padding:12px;border-radius:6px">
+    <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:4px">布局策略</div>
+    <ul style="color:#aaa;font-size:12px;padding-left:16px;margin:0">
+      <li>整个窗口3列等高，用CSS Grid填满</li>
+      <li>每个图表区域用 <code>flex:1</code> 自动撑满</li>
+      <li>底部状态栏固定4px高，不浪费空间</li>
+      <li>所有面板间间距统一4px</li>
+    </ul>
+  </div>
+  <div style="background:#1a2a3a;padding:12px;border-radius:6px">
+    <div style="color:#00d4aa;font-size:11px;font-weight:bold;margin-bottom:4px">对比之前的改进</div>
+    <ul style="color:#aaa;font-size:12px;padding-left:16px;margin:0">
+      <li>底部面板从3个独立卡片 → 融入3列布局</li>
+      <li>Cell电压有渐变进度条，不再只是文字</li>
+      <li>圆环更大更清晰(80px vs 76px)</li>
+      <li>新增寿命预测大数字显示</li>
+      <li>趋势图有渐变填充和时间轴标签</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<div class="section" style="margin-top:16px;text-align:center;color:#7a8fa3;font-size:13px">
+  如果满意这个方向，我就直接开始用这个方案重写代码！<br>
+  <span style="color:#00d4aa;font-size:14px;font-weight:bold">点击下方选择：</span>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+    <div class="letter">✓</div>
+    <div class="content">
+      <h3 style="color:#00e676">满意，直接执行！</h3>
+      <p>用这个全屏铺满方案重写main_window.py</p>
+    </div>
+  </div>
+  <div class="option" data-choice="modify" onclick="toggleSelect(this)">
+    <div class="letter">✎</div>
+    <div class="content">
+      <h3 style="color:#ffab40">方向对了，但要调整</h3>
+      <p>告诉我具体哪里需要修改</p>
+    </div>
+  </div>
+</div>
+</div>

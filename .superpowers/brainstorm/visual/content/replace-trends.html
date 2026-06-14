@@ -1,0 +1,217 @@
+﻿<div style="max-width:1300px;margin:0 auto;padding:20px">
+<h2 style="color:#00d4aa;margin-bottom:4px">中间区域替换方案</h2>
+<p class="subtitle" style="margin-bottom:16px">6个迷你趋势图 → 换成什么更有用？</p>
+
+<div class="section">
+<h3>为什么去掉趋势图</h3>
+<p style="color:#aaa;font-size:12px">数据每4秒刷新一次，迷你趋势图变化很慢，占据1/3屏幕但信息密度低。以下组件能在同样空间内传递更多有价值信息。</p>
+</div>
+
+<div class="cards" style="grid-template-columns:1fr">
+  
+  <!-- 方案A: 电池健康度面板 -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)" style="margin-bottom:12px">
+    <div class="card-image" style="background:#0d1520;padding:16px;font-family:monospace;color:#00e5c8">
+      <div style="color:#00d4aa;font-size:12px;font-weight:bold;margin-bottom:10px">方案A: 电池健康度全景面板 <span style="color:#7a8fa3;font-size:10px">(推荐)</span></div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <!-- 左上: 大型仪表盘 - 预计寿命 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:16px;text-align:center">
+          <div style="color:#7a8fa3;font-size:10px;margin-bottom:4px">预计可用寿命</div>
+          <svg width="160" height="100" viewBox="0 0 160 100">
+            <!-- 半圆弧背景 -->
+            <path d="M20,90 A60,60 0 0,1 140,90" fill="none" stroke="#1a2a3a" stroke-width="12" stroke-linecap="round"/>
+            <!-- 绿色段 -->
+            <path d="M20,90 A60,60 0 0,1 50,35" fill="none" stroke="#00e676" stroke-width="12" stroke-linecap="round"/>
+            <!-- 蓝色段 -->
+            <path d="M50,35 A60,60 0 0,1 110,35" fill="none" stroke="#448aff" stroke-width="12" stroke-linecap="round"/>
+            <!-- 红色段 -->
+            <path d="M110,35 A60,60 0 0,1 140,90" fill="none" stroke="#ff5252" stroke-width="12" stroke-linecap="round"/>
+            <!-- 指针 -->
+            <line x1="80" y1="90" x2="55" y2="38" stroke="#00d4aa" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="80" cy="90" r="5" fill="#00d4aa"/>
+            <!-- 刻度数字 -->
+            <text x="15" y="98" fill="#7a8fa3" font-size="8">0</text>
+            <text x="75" y="18" fill="#7a8fa3" font-size="8">18</text>
+            <text x="140" y="98" fill="#7a8fa3" font-size="8">36</text>
+            <!-- 中心值 -->
+            <text x="80" y="78" text-anchor="middle" fill="#00e5c8" font-size="28" font-weight="bold" font-family="Consolas">18</text>
+            <text x="80" y="92" text-anchor="middle" fill="#7a8fa3" font-size="9">月</text>
+          </svg>
+        </div>
+
+        <!-- 右上: 3个环形进度 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:16px">
+          <div style="color:#7a8fa3;font-size:10px;margin-bottom:8px;text-align:center">关键健康指标</div>
+          <div style="display:flex;justify-content:space-around;align-items:center">
+            <div style="text-align:center">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="28" fill="none" stroke="#1a2a3a" stroke-width="6"/>
+                <circle cx="36" cy="36" r="28" fill="none" stroke="#448aff" stroke-width="6" stroke-dasharray="176" stroke-dashoffset="125" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+                <text x="36" y="34" text-anchor="middle" fill="#e0e8f0" font-size="14" font-weight="bold" font-family="Consolas">29</text>
+                <text x="36" y="44" text-anchor="middle" fill="#7a8fa3" font-size="7">%</text>
+              </svg>
+              <div style="color:#448aff;font-size:9px;margin-top:2px;font-weight:bold">RSOC</div>
+            </div>
+            <div style="text-align:center">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="28" fill="none" stroke="#1a2a3a" stroke-width="6"/>
+                <circle cx="36" cy="36" r="28" fill="none" stroke="#00e676" stroke-width="6" stroke-dasharray="176" stroke-dashoffset="44" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+                <text x="36" y="34" text-anchor="middle" fill="#e0e8f0" font-size="14" font-weight="bold" font-family="Consolas">75</text>
+                <text x="36" y="44" text-anchor="middle" fill="#7a8fa3" font-size="7">%</text>
+              </svg>
+              <div style="color:#00e676;font-size:9px;margin-top:2px;font-weight:bold">SOH</div>
+            </div>
+            <div style="text-align:center">
+              <svg width="72" height="72" viewBox="0 0 72 72">
+                <circle cx="36" cy="36" r="28" fill="none" stroke="#1a2a3a" stroke-width="6"/>
+                <circle cx="36" cy="36" r="28" fill="none" stroke="#e040fb" stroke-width="6" stroke-dasharray="176" stroke-dashoffset="115" stroke-linecap="round" transform="rotate(-90 36 36)"/>
+                <text x="36" y="34" text-anchor="middle" fill="#e0e8f0" font-size="14" font-weight="bold" font-family="Consolas">35</text>
+                <text x="36" y="44" text-anchor="middle" fill="#7a8fa3" font-size="7">℃</text>
+              </svg>
+              <div style="color:#e040fb;font-size:9px;margin-top:2px;font-weight:bold">温度</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 左下: 电池充放电状态图 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:14px">
+          <div style="color:#7a8fa3;font-size:10px;margin-bottom:8px;text-align:center">充放电状态</div>
+          <!-- 电池图标 + 充电动画示意 -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:16px">
+            <div style="position:relative;width:80px;height:120px;border:3px solid #00e676;border-radius:8px;overflow:hidden">
+              <div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:30px;height:6px;background:#00e676;border-radius:3px 3px 0 0"></div>
+              <!-- 充电液位 -->
+              <div style="position:absolute;bottom:0;left:0;right:0;height:29%;background:linear-gradient(180deg,#00e676 0%,#00b15a 100%);transition:height 0.5s"></div>
+              <!-- 闪电图标 -->
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px">⚡</div>
+              <!-- 百分比 -->
+              <div style="position:absolute;bottom:6px;left:0;right:0;text-align:center;color:#fff;font-size:14px;font-weight:bold;font-family:Consolas">29%</div>
+            </div>
+            <div style="font-size:10px;display:flex;flex-direction:column;gap:6px">
+              <div style="color:#00e676;font-weight:bold;font-size:14px">充电中</div>
+              <div style="color:#7a8fa3">电流: <span style="color:#ffab40">-1,200 mA</span></div>
+              <div style="color:#7a8fa3">功率: <span style="color:#ff5252">16.5 W</span></div>
+              <div style="color:#7a8fa3">循环: <span style="color:#e0e8f0">156 次</span></div>
+              <div style="color:#7a8fa3">模式: <span style="color:#e0e8f0">智能快充</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右下: 容量详情面板 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:14px">
+          <div style="color:#7a8fa3;font-size:10px;margin-bottom:8px;text-align:center">容量详情</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <!-- FCC -->
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:#7a8fa3">FCC 满充容量</span><span style="color:#00e5c8;font-family:Consolas;font-weight:bold">5,495 mAh</span></div>
+              <div style="height:14px;background:#1a2a3a;border-radius:4px;overflow:hidden"><div style="width:100%;height:100%;background:linear-gradient(90deg,#00e5c8,#00b89c);border-radius:4px"></div></div>
+            </div>
+            <!-- RM -->
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:#7a8fa3">RM 剩余容量</span><span style="color:#448aff;font-family:Consolas;font-weight:bold">1,593 mAh (29%)</span></div>
+              <div style="height:14px;background:#1a2a3a;border-radius:4px;overflow:hidden"><div style="width:29%;height:100%;background:linear-gradient(90deg,#448aff,#2979ff);border-radius:4px;display:flex;align-items:center;padding-left:4px"><span style="color:#fff;font-size:8px;font-weight:bold">29%</span></div></div>
+            </div>
+            <!-- DC -->
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:#7a8fa3">DC 设计容量</span><span style="color:#e0e8f0;font-family:Consolas;font-weight:bold">6,200 mAh</span></div>
+              <div style="height:14px;background:#1a2a3a;border-radius:4px;overflow:hidden"><div style="width:89%;height:100%;background:linear-gradient(90deg,#e0e8f0,#b0bec5);border-radius:4px"></div></div>
+            </div>
+            <!-- Cell电压 -->
+            <div style="margin-top:4px;border-top:1px solid #2a3f55;padding-top:6px">
+              <div style="color:#7a8fa3;font-size:9px;margin-bottom:4px">Cell 电压均衡</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px;font-size:9px">
+                <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">Cell1</span><span style="color:#00e5c8;font-family:Consolas">4,200 mV</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">Cell2</span><span style="color:#00e5c8;font-family:Consolas">4,198 mV</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">Cell3</span><span style="color:#00e5c8;font-family:Consolas">4,199 mV</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">Cell4</span><span style="color:#00e5c8;font-family:Consolas">4,201 mV</span></div>
+              </div>
+              <div style="color:#7a8fa3;font-size:8px;margin-top:3px;text-align:center">压差: <span style="color:#00e676">3 mV (极佳)</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案A: 电池健康度全景面板 (推荐)</h3>
+      <p>将趋势图替换为4个功能面板：大仪表盘(寿命预测) + 3环健康指标 + 充放电状态(含电池图标) + 容量详情(含Cell电压)</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>信息密度比趋势图高3倍+</li><li>仪表盘非常直观</li><li>电池图标+充电动画很专业</li><li>Cell电压均衡一目了然</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>没有历史趋势（但可看图表子窗口）</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 方案B: 数据表格面板 -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)" style="margin-bottom:12px">
+    <div class="card-image" style="background:#0d1520;padding:16px;font-family:monospace;color:#00e5c8">
+      <div style="color:#00d4aa;font-size:12px;font-weight:bold;margin-bottom:10px">方案B: 全参数仪表板</div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <!-- 左: 参数表格 -->
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:14px">
+          <div style="color:#7a8fa3;font-size:10px;margin-bottom:6px;border-bottom:1px solid #2a3f55;padding-bottom:4px">全部参数一览</div>
+          <table style="width:100%;font-size:9px;border-collapse:collapse">
+            <tr style="color:#5a6a7a;border-bottom:1px solid #1a2a3a"><td style="padding:3px 0">参数</td><td style="text-align:right">当前值</td><td style="text-align:right">单位</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">电压</td><td style="text-align:right;color:#00e5c8;font-weight:bold">13,761</td><td style="text-align:right;color:#5a6a7a">mV</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">电流</td><td style="text-align:right;color:#ffab40;font-weight:bold">-1,200</td><td style="text-align:right;color:#5a6a7a">mA</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">温度</td><td style="text-align:right;color:#e040fb;font-weight:bold">35.2</td><td style="text-align:right;color:#5a6a7a">℃</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">功率</td><td style="text-align:right;color:#ff5252;font-weight:bold">16.5</td><td style="text-align:right;color:#5a6a7a">W</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">RSOC</td><td style="text-align:right;color:#448aff;font-weight:bold">29</td><td style="text-align:right;color:#5a6a7a">%</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">SOH</td><td style="text-align:right;color:#00e676;font-weight:bold">75</td><td style="text-align:right;color:#5a6a7a">%</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">FCC</td><td style="text-align:right;color:#00e5c8;font-weight:bold">5,495</td><td style="text-align:right;color:#5a6a7a">mAh</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">RM</td><td style="text-align:right;color:#00e5c8;font-weight:bold">1,593</td><td style="text-align:right;color:#5a6a7a">mAh</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">DC</td><td style="text-align:right;color:#e0e8f0">6,200</td><td style="text-align:right;color:#5a6a7a">mAh</td></tr>
+            <tr style="border-bottom:1px solid #1a2a3a"><td style="padding:3px 0;color:#7a8fa3">DV</td><td style="text-align:right;color:#e0e8f0">14,138</td><td style="text-align:right;color:#5a6a7a">mV</td></tr>
+            <tr><td style="padding:3px 0;color:#7a8fa3">模式</td><td style="text-align:right;color:#e0e8f0">0x00</td><td style="text-align:right;color:#5a6a7a">hex</td></tr>
+          </table>
+        </div>
+        
+        <!-- 右: 圆环+仪表+状态 -->
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:12px;text-align:center;flex:1">
+            <div style="color:#7a8fa3;font-size:10px;margin-bottom:6px">预计寿命</div>
+            <div style="color:#00e5c8;font-size:42px;font-weight:bold;font-family:Consolas;line-height:1">18<span style="font-size:14px;color:#7a8fa3"> 月</span></div>
+            <div style="margin-top:6px;height:6px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:50%;height:100%;background:linear-gradient(90deg,#00e676,#448aff);border-radius:3px"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:7px;color:#5a6a7a;margin-top:2px"><span>0月</span><span>36月</span></div>
+          </div>
+          
+          <div style="display:flex;gap:8px;flex:1">
+            <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:10px;flex:1;text-align:center">
+              <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="#1a2a3a" stroke-width="5"/><circle cx="30" cy="30" r="24" fill="none" stroke="#448aff" stroke-width="5" stroke-dasharray="151" stroke-dashoffset="107" stroke-linecap="round" transform="rotate(-90 30 30)"/><text x="30" y="33" text-anchor="middle" fill="#e0e8f0" font-size="12" font-weight="bold">29</text></svg>
+              <div style="color:#448aff;font-size:8px;margin-top:2px">RSOC</div>
+            </div>
+            <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:10px;flex:1;text-align:center">
+              <svg width="60" height="60" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="none" stroke="#1a2a3a" stroke-width="5"/><circle cx="30" cy="30" r="24" fill="none" stroke="#00e676" stroke-width="5" stroke-dasharray="151" stroke-dashoffset="38" stroke-linecap="round" transform="rotate(-90 30 30)"/><text x="30" y="33" text-anchor="middle" fill="#e0e8f0" font-size="12" font-weight="bold">75</text></svg>
+              <div style="color:#00e676;font-size:8px;margin-top:2px">SOH</div>
+            </div>
+          </div>
+
+          <div style="background:#162230;border:1px solid #2a3f55;border-radius:10px;padding:10px">
+            <div style="color:#7a8fa3;font-size:9px;margin-bottom:4px">运行信息</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;font-size:9px">
+              <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">状态</span><span style="color:#00e676">充电中</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">循环</span><span style="color:#e0e8f0">156次</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">时长</span><span style="color:#e0e8f0">12分</span></div>
+              <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">使用</span><span style="color:#e0e8f0">2024-01</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案B: 全参数仪表板</h3>
+      <p>左侧12行参数表格（所有寄存器值），右侧寿命大数字+圆环+运行信息</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>一屏看到所有参数</li><li>表格排列整齐</li><li>寿命数字很醒目</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>表格视觉上不如图表生动</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;text-align:center;color:#7a8fa3;font-size:13px">
+  <b style="color:#00d4aa">我的建议: 方案A</b> — 仪表盘+圆环+电池图标+容量条的组合，既有视觉冲击力又有信息深度。趋势图功能留给子窗口(📊实时监控)处理。<br><br>
+  点击上方选择：
+</div>
+</div>

@@ -1,0 +1,41 @@
+app:
+  title: "Lenovo Battery Tool"
+  window_width: 1200
+  window_height: 676
+  window_fixed_size: true
+
+polling:
+  main_interval_ms: 4000
+  log_scan_interval_ms: 1000
+
+charts:
+  history_seconds: 60
+  voltage_y_range: [10000, 18000]
+  current_y_range: [-4000, 8000]
+  fcc_y_range: [3000, 12000]
+  rm_y_range: [3000, 12000]
+
+gauge:
+  min_value: 0
+  max_value: 36
+  title: "预计可用≥               月"
+
+logging:
+  level: "INFO"
+  file: null
+  format: "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+csv:
+  delimiter: ","
+  encoding: "utf-8"
+  include_timestamp: true
+
+dll:
+  search_paths:
+    - "./resources/dlls"
+    - "../shared/dlls"
+    - "./"
+
+thresholds:
+  temperature_warning: 60.0
+  soh_warning: 20

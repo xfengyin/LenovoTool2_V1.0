@@ -1,0 +1,5 @@
+apiVersion: v2
+name: lenovo-battery-tool
+description: Lenovo Battery Intelligent Platform
+version: 2.0.0
+appVersion: "2.0.0"

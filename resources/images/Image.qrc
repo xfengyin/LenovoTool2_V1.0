@@ -1,0 +1,18 @@
+<RCC>
+  <qresource prefix="Image">
+    <file>Computer.png</file>
+    <file>CensBack.png</file>
+    <file>Btn3.png</file>
+    <file>MainBack.png</file>
+    <file>Cen3Back.png</file>
+    <file>Cen2Back.png</file>
+    <file>Protect.png</file>
+    <file>Bat.png</file>
+    <file>chr.png</file>
+    <file>dis.png</file>
+    <file>Cen4Back.png</file>
+    <file>CenBack.png</file>
+    <file>Back.png</file>
+    <file>background.png</file>
+  </qresource>
+</RCC>

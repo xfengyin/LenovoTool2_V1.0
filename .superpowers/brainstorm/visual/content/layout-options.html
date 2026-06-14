@@ -1,0 +1,186 @@
+﻿<div style="max-width:1200px;margin:0 auto;padding:20px">
+<h2>🔋 电池监控大屏 — UI设计方案</h2>
+<p class="subtitle">选择你最满意的布局风格</p>
+
+<div class="section">
+<h3>当前问题分析</h3>
+<p style="color:#aaa;font-size:14px">当前界面虽然增加了更多组件，但面板间仍存在大量空白，信息密度不够，不够"监控大屏"的感觉。</p>
+</div>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1520;padding:16px;font-size:11px;font-family:monospace;color:#00e5c8;min-height:280px;overflow:hidden">
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#00d4aa;font-weight:bold">电池监控大屏</span>
+        <div style="display:flex;gap:6px">
+          <span style="background:#00d4aa;color:#0d1520;padding:2px 8px;border-radius:4px;font-size:10px">▶ 开始</span>
+          <span style="background:#1a2a3a;padding:2px 8px;border-radius:4px;font-size:10px">📊 图表</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:8px">
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">电压</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">13761</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">电流</div><div style="color:#ffab40;font-size:14px;font-weight:bold">-1200</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">FCC</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">5495</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">RM</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">1593</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">DC</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">6200</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">DV</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">14138</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">功率</div><div style="color:#ff5252;font-size:14px;font-weight:bold">16.5</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">模式</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">0x00</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 2fr 1fr 1fr;gap:6px">
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px">
+          <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:6px">电池Cell</div>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="color:#7a8fa3;font-size:9px;width:30px">Cell1</span><div style="flex:1;height:10px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:85%;height:100%;background:#00e676;border-radius:3px"></div></div><span style="color:#00e5c8;font-size:9px">4200</span></div>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="color:#7a8fa3;font-size:9px;width:30px">Cell2</span><div style="flex:1;height:10px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:82%;height:100%;background:#00e676;border-radius:3px"></div></div><span style="color:#00e5c8;font-size:9px">4198</span></div>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="color:#7a8fa3;font-size:9px;width:30px">Cell3</span><div style="flex:1;height:10px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:84%;height:100%;background:#00e676;border-radius:3px"></div></div><span style="color:#00e5c8;font-size:9px">4199</span></div>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="color:#7a8fa3;font-size:9px;width:30px">Cell4</span><div style="flex:1;height:10px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:86%;height:100%;background:#00e676;border-radius:3px"></div></div><span style="color:#00e5c8;font-size:9px">4201</span></div>
+          <div style="border-top:1px solid #2a3f55;margin:4px 0"></div>
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:3px"><span style="color:#7a8fa3;font-size:9px;width:30px">容量</span><div style="flex:1;height:10px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:29%;height:100%;background:#448aff;border-radius:3px"></div></div><span style="color:#00e5c8;font-size:9px">29%</span></div>
+          <div style="display:flex;align-items:center;gap:4px"><span style="color:#7a8fa3;font-size:9px;width:30px">SOH</span><div style="flex:1;height:10px;background:#1a2a3a;border-radius:3px;overflow:hidden"><div style="width:75%;height:100%;background:#00e676;border-radius:3px"></div></div><span style="color:#00e5c8;font-size:9px">75%</span></div>
+        </div>
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px">
+          <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:6px">实时趋势 (6图)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            <div style="background:#1a2a3a;border-radius:4px;padding:4px"><div style="color:#7a8fa3;font-size:8px">电压 mV</div><div style="color:#00e5c8;font-size:11px;font-weight:bold">13,761</div><svg width="100%" height="25" viewBox="0 0 100 25"><polyline points="0,20 15,18 30,15 45,12 60,14 75,10 90,8 100,6" fill="none" stroke="#00e5c8" stroke-width="1.5"/><polygon points="0,20 15,18 30,15 45,12 60,14 75,10 90,8 100,6 100,25 0,25" fill="url(#g1)" opacity="0.3"/><defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00e5c8"/><stop offset="1" stop-color="#00e5c8" stop-opacity="0"/></linearGradient></defs></svg></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:4px"><div style="color:#7a8fa3;font-size:8px">电流 mA</div><div style="color:#ffab40;font-size:11px;font-weight:bold">-1,200</div><svg width="100%" height="25" viewBox="0 0 100 25"><polyline points="0,5 15,8 30,12 45,10 60,15 75,12 90,18 100,20" fill="none" stroke="#ffab40" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:4px"><div style="color:#7a8fa3;font-size:8px">RSOC %</div><div style="color:#448aff;font-size:11px;font-weight:bold">29%</div><svg width="100%" height="25" viewBox="0 0 100 25"><polyline points="0,10 20,12 40,14 60,13 80,15 100,16" fill="none" stroke="#448aff" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:4px"><div style="color:#7a8fa3;font-size:8px">温度 ℃</div><div style="color:#e040fb;font-size:11px;font-weight:bold">35.2</div><svg width="100%" height="25" viewBox="0 0 100 25"><polyline points="0,15 20,14 40,12 60,13 80,11 100,10" fill="none" stroke="#e040fb" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:4px"><div style="color:#7a8fa3;font-size:8px">功率 W</div><div style="color:#ff5252;font-size:11px;font-weight:bold">16.5</div><svg width="100%" height="25" viewBox="0 0 100 25"><polyline points="0,18 20,15 40,12 60,14 80,10 100,8" fill="none" stroke="#ff5252" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:4px;padding:4px"><div style="color:#7a8fa3;font-size:8px">SOH %</div><div style="color:#00e676;font-size:11px;font-weight:bold">75%</div><svg width="100%" height="25" viewBox="0 0 100 25"><polyline points="0,8 20,9 40,10 60,11 80,12 100,13" fill="none" stroke="#00e676" stroke-width="1.5"/></svg></div>
+          </div>
+        </div>
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px">
+          <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:6px">健康指标</div>
+          <div style="display:flex;justify-content:center;gap:12px;margin-bottom:8px">
+            <div style="text-align:center"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="none" stroke="#1a2a3a" stroke-width="6"/><circle cx="28" cy="28" r="22" fill="none" stroke="#448aff" stroke-width="6" stroke-dasharray="138.2" stroke-dashoffset="98.1" stroke-linecap="round" transform="rotate(-90 28 28)"/><text x="28" y="32" text-anchor="middle" fill="#e0e8f0" font-size="12" font-weight="bold">29</text></svg><div style="color:#448aff;font-size:8px;margin-top:2px">RSOC</div></div>
+            <div style="text-align:center"><svg width="56" height="56" viewBox="0 0 56 56"><circle cx="28" cy="28" r="22" fill="none" stroke="#1a2a3a" stroke-width="6"/><circle cx="28" cy="28" r="22" fill="none" stroke="#00e676" stroke-width="6" stroke-dasharray="138.2" stroke-dashoffset="34.5" stroke-linecap="round" transform="rotate(-90 28 28)"/><text x="28" y="32" text-anchor="middle" fill="#e0e8f0" font-size="12" font-weight="bold">75</text></svg><div style="color:#00e676;font-size:8px;margin-top:2px">SOH</div></div>
+          </div>
+          <div style="border-top:1px solid #2a3f55;margin:4px 0"></div>
+          <div style="font-size:9px;color:#e0e8f0;display:grid;grid-template-columns:1fr 1fr;gap:2px">
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">充电状态</span><span style="color:#00e676">充电中</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">循环次数</span><span style="color:#e0e8f0">156</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">运行时长</span><span style="color:#e0e8f0">12分30秒</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">首次使用</span><span style="color:#e0e8f0">2024-01</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">最高温度</span><span style="color:#ffab40">52.3℃</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">电压范围</span><span style="color:#e0e8f0">12.1~14.2V</span></div>
+          </div>
+        </div>
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px">
+          <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:6px">会话信息</div>
+          <div style="font-size:9px;color:#e0e8f0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#7a8fa3">采样次数</span><span style="font-weight:bold">42</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#7a8fa3">平均电压</span><span style="font-weight:bold">13,761mV</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#7a8fa3">平均电流</span><span style="font-weight:bold">-1,200mA</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="color:#7a8fa3">平均温度</span><span style="font-weight:bold">35.2℃</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:#7a8fa3">平均功率</span><span style="font-weight:bold">16.5W</span></div>
+          </div>
+          <div style="border-top:1px solid #2a3f55;margin:4px 0"></div>
+          <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:4px">功率限制</div>
+          <div style="font-size:9px;color:#e0e8f0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#7a8fa3">PL1 长时</span><span style="color:#00e5c8;font-weight:bold">45 W</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px"><span style="color:#7a8fa3">PL2 短时</span><span style="color:#00e5c8;font-weight:bold">65 W</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#7a8fa3">PL4 极限</span><span style="color:#00e5c8;font-weight:bold">90 W</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:4px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center;font-size:9px">
+        <div style="display:flex;gap:16px">
+          <div><span style="color:#7a8fa3">PL1:</span> <span style="color:#00e5c8;font-weight:bold">45W</span></div>
+          <div><span style="color:#7a8fa3">PL2:</span> <span style="color:#00e5c8;font-weight:bold">65W</span></div>
+          <div><span style="color:#7a8fa3">PL4:</span> <span style="color:#00e5c8;font-weight:bold">90W</span></div>
+        </div>
+        <div style="display:flex;gap:16px">
+          <span>温度: <b style="color:#00e676">35.2℃</b></span>
+          <span>RSOC: <b style="color:#448aff">29%</b></span>
+          <span>SOH: <b style="color:#00e676">75%</b></span>
+          <span>预测: <b style="color:#e0e8f0">18月</b></span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案A: 4列紧凑型 (推荐)</h3>
+      <p>类似工控监控大屏风格，所有信息一目了然，4列等宽布局最大化利用空间</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>信息密度最高</li><li>空间利用率极佳</li><li>所有数据同时可见</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>需要窗口足够宽</li><li>字体可能偏小</li></ul></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0d1520;padding:16px;font-size:11px;font-family:monospace;color:#00e5c8;min-height:280px;overflow:hidden">
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+        <span style="color:#00d4aa;font-weight:bold">电池监控大屏</span>
+        <div style="display:flex;gap:6px">
+          <span style="background:#00d4aa;color:#0d1520;padding:2px 8px;border-radius:4px;font-size:10px">▶ 开始</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:8px">
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">电压</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">13761</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">电流</div><div style="color:#ffab40;font-size:14px;font-weight:bold">-1200</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">FCC</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">5495</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">RM</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">1593</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">DC</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">6200</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">DV</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">14138</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">功率</div><div style="color:#ff5252;font-size:14px;font-weight:bold">16.5</div></div>
+        <div style="background:#1a2a3a;border-radius:4px;padding:6px;text-align:center"><div style="color:#7a8fa3;font-size:9px">模式</div><div style="color:#00e5c8;font-size:14px;font-weight:bold">0x00</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:6px">
+        <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px">
+          <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:6px">实时趋势 (6图网格)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px">
+            <div style="background:#1a2a3a;border-radius:3px;padding:3px"><div style="color:#7a8fa3;font-size:7px">电压</div><svg width="100%" height="30" viewBox="0 0 100 30"><polyline points="0,20 25,15 50,12 75,10 100,5" fill="none" stroke="#00e5c8" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:3px;padding:3px"><div style="color:#7a8fa3;font-size:7px">电流</div><svg width="100%" height="30" viewBox="0 0 100 30"><polyline points="0,5 25,10 50,15 75,12 100,20" fill="none" stroke="#ffab40" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:3px;padding:3px"><div style="color:#7a8fa3;font-size:7px">RSOC</div><svg width="100%" height="30" viewBox="0 0 100 30"><polyline points="0,10 25,12 50,14 75,16 100,18" fill="none" stroke="#448aff" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:3px;padding:3px"><div style="color:#7a8fa3;font-size:7px">温度</div><svg width="100%" height="30" viewBox="0 0 100 30"><polyline points="0,15 25,12 50,10 75,13 100,8" fill="none" stroke="#e040fb" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:3px;padding:3px"><div style="color:#7a8fa3;font-size:7px">功率</div><svg width="100%" height="30" viewBox="0 0 100 30"><polyline points="0,18 25,15 50,12 75,10 100,8" fill="none" stroke="#ff5252" stroke-width="1.5"/></svg></div>
+            <div style="background:#1a2a3a;border-radius:3px;padding:3px"><div style="color:#7a8fa3;font-size:7px">SOH</div><svg width="100%" height="30" viewBox="0 0 100 30"><polyline points="0,8 25,9 50,10 75,11 100,13" fill="none" stroke="#00e676" stroke-width="1.5"/></svg></div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px;flex:1">
+            <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:4px">Cell 电压</div>
+            <div style="font-size:9px;display:grid;grid-template-columns:1fr 1fr;gap:2px">
+              <div>Cell1: <span style="color:#00e5c8">4200mV</span></div>
+              <div>Cell2: <span style="color:#00e5c8">4198mV</span></div>
+              <div>Cell3: <span style="color:#00e5c8">4199mV</span></div>
+              <div>Cell4: <span style="color:#00e5c8">4201mV</span></div>
+            </div>
+          </div>
+          <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px;flex:1">
+            <div style="color:#00d4aa;font-size:10px;font-weight:bold;margin-bottom:4px">会话统计</div>
+            <div style="font-size:9px">
+              <div>采样: <b>42</b> | PL1: <span style="color:#00e5c8">45W</span></div>
+              <div>PL2: <span style="color:#00e5c8">65W</span> | PL4: <span style="color:#00e5c8">90W</span></div>
+            </div>
+          </div>
+          <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:8px;flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:9px">
+              <div style="text-align:center"><svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="#1a2a3a" stroke-width="4"/><circle cx="18" cy="18" r="14" fill="none" stroke="#448aff" stroke-width="4" stroke-dasharray="88" stroke-dashoffset="62.5" stroke-linecap="round" transform="rotate(-90 18 18)"/><text x="18" y="22" text-anchor="middle" fill="#e0e8f0" font-size="9" font-weight="bold">29</text></svg></div>
+              <div style="text-align:center"><svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="#1a2a3a" stroke-width="4"/><circle cx="18" cy="18" r="14" fill="none" stroke="#00e676" stroke-width="4" stroke-dasharray="88" stroke-dashoffset="22" stroke-linecap="round" transform="rotate(-90 18 18)"/><text x="18" y="22" text-anchor="middle" fill="#e0e8f0" font-size="9" font-weight="bold">75</text></svg></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="background:#162230;border:1px solid #2a3f55;border-radius:6px;padding:4px 12px;margin-top:6px;display:flex;justify-content:space-between;font-size:9px">
+        <span>温度: <b>35.2℃</b></span>
+        <span>RSOC: <b>29%</b></span>
+        <span>SOH: <b>75%</b></span>
+        <span>预测: <b>18月</b></span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>方案B: 2列主+信息侧边</h3>
+      <p>左侧2/3放图表，右侧1/3放数据面板，类似Grafana监控面板</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>优点</h4><ul><li>图表区域大，曲线清晰</li><li>信息分层清晰</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>右侧信息较拥挤</li><li>空间利用不如方案A</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;text-align:center;color:#7a8fa3;font-size:13px">
+  点击上方卡片选择你满意的方案，然后告诉我！
+</div>
+</div>

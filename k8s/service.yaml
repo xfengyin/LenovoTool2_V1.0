@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lenovo-config
+  namespace: lenovo-battery
+data:
+  LOG_LEVEL: "INFO"
+  DATABASE_URL: "postgresql://lenovo:secret@db:5432/lenovo"
+  JWT_SECRET: "change-me-in-production"
