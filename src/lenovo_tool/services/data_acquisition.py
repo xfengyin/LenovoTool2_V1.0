@@ -3,7 +3,7 @@
 from datetime import datetime
 
 from lenovo_tool.core.data_models import BatterySnapshot
-from lenovo_tool.core.dll_interface import DLLInterface
+from lenovo_tool.core.interfaces import BatteryDataSource
 from lenovo_tool.services.life_prediction import (
     predict_life_months,
 )
@@ -16,15 +16,15 @@ class DataAcquisitionService:
     Tracks session-level statistics (peak temp, voltage range).
     """
 
-    def __init__(self, dll: DLLInterface) -> None:
-        self._dll = dll
+    def __init__(self, datasource: BatteryDataSource) -> None:
+        self._datasource = datasource
         self._session_max_temp: float = 0.0
         self._session_min_v: int = 99999
         self._session_max_v: int = 0
 
     def fetch_snapshot(self) -> BatterySnapshot:
         """Fetch all data and build an immutable snapshot."""
-        data = self._dll.read_all_main_registers()
+        data = self._datasource.read_all_main_registers()
 
         temp = round(data["temperature"], 1)
         voltage = data["voltage"]
@@ -64,7 +64,7 @@ class DataAcquisitionService:
             ),
             cycle_count=int(data.get("cycle_count", 0)),
             first_usage_time=str(
-                self._dll.get_first_usage_time()
+                self._datasource.get_first_usage_time()
             ),
             charge_state=charge_state,
             max_temperature=self._session_max_temp,

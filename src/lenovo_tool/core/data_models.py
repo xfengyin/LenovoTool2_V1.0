@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import ClassVar
+from typing import ClassVar, Dict
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,3 +81,16 @@ class AppConfig:
     gauge_min: int = 0
     gauge_max: int = 36
     gauge_title: str = "预计可用寿命（月）"
+
+
+@dataclass(frozen=True, slots=True)
+class PerformanceMetrics:
+    """Performance metrics for monitoring service health."""
+
+    sample_count: int = 0
+    total_delay_ms: float = 0.0
+    max_delay_ms: float = 0.0
+    min_delay_ms: float = float("inf")
+    error_count: int = 0
+    error_types: Dict[str, int] = field(default_factory=dict)
+    uptime_seconds: float = 0.0

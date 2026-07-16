@@ -10,8 +10,9 @@ Registers:
 """
 
 from enum import Enum
+from typing import Dict
 
-from lenovo_tool.core.dll_interface import DLLInterface
+from lenovo_tool.core.interfaces import BatteryDataSource
 from lenovo_tool.core.exceptions import ChargeModeError
 
 
@@ -20,7 +21,7 @@ class ChargeModeType(Enum):
     NIGHT_CHARGE = "night_charge"
 
 
-MODE_CONFIG: dict[ChargeModeType, dict] = {
+MODE_CONFIG: Dict[ChargeModeType, Dict[str, int | str]] = {
     ChargeModeType.FAST_CHARGE: {
         "addr": 0x26,
         "name": "快充",
@@ -37,8 +38,8 @@ SLAVE_ADDR: int = 0x16
 class ChargeModeService:
     """Manages charge mode switching with proper state encapsulation."""
 
-    def __init__(self, dll: DLLInterface):
-        self._dll = dll
+    def __init__(self, datasource: BatteryDataSource) -> None:
+        self._datasource = datasource
         self._states: dict[ChargeModeType, bool] = {
             ChargeModeType.FAST_CHARGE: False,
             ChargeModeType.NIGHT_CHARGE: False,
@@ -52,7 +53,7 @@ class ChargeModeService:
         config = MODE_CONFIG[mode]
         current = self._states[mode]
         try:
-            self._dll.write_smbus(0, config["addr"], SLAVE_ADDR, current)
+            self._datasource.write_smbus(0, config["addr"], SLAVE_ADDR, current)
         except Exception as e:
             raise ChargeModeError(f"Failed to toggle {config['name']}: {e}") from e
 

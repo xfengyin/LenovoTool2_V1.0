@@ -4,17 +4,21 @@ All DLL calls are:
 - Protected by threading.RLock for thread safety
 - Wrapped in try/except with proper error types
 - Validated with explicit ctypes argtypes/restype
+
+Implements BatteryDataSource interface for DI compatibility.
 """
 
 import threading
 import time
 from ctypes import CDLL, c_char, c_int, c_short, pointer
+from typing import Dict
 
+from lenovo_tool.core.interfaces import BatteryDataSource
 from lenovo_tool.core.dll_loader import DLLPaths
 from lenovo_tool.core.exceptions import DLLCommunicationError, SMBusError
 
 
-class DLLInterface:
+class DLLInterface(BatteryDataSource):
     """Thread-safe interface to battery EC via SWD_EC.dll and Sunwoda.dll."""
 
     def __init__(self, dll_paths: DLLPaths) -> None:
@@ -128,7 +132,7 @@ class DLLInterface:
 
     def read_smbus(
         self, type_: int, addr: int, byte_length: int, slave: int
-    ) -> dict[str, str]:
+    ) -> Dict[str, str]:
         """Read data from the EC via SMBus.
 
         Args:
@@ -211,7 +215,7 @@ class DLLInterface:
 
     # -- Atomic snapshot (for DataAcquisitionService) ------------------------
 
-    def read_all_main_registers(self) -> dict[str, int | float]:
+    def read_all_main_registers(self) -> Dict[str, int | float]:
         """Read all main data registers under a single lock.
 
         Returns a dict with keys: voltage, current, temperature, rsoc, soh,

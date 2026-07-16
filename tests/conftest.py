@@ -11,6 +11,7 @@ from lenovo_tool.core.data_models import (
     BatterySnapshot,
     LogSnapshot,
 )
+from lenovo_tool.core.di_container import DIContainer, create_default_container
 from lenovo_tool.core.dll_interface import DLLInterface
 from lenovo_tool.core.dll_loader import DLLPaths
 
@@ -101,3 +102,38 @@ def sample_log_snapshot() -> LogSnapshot:
 @pytest.fixture
 def app_config() -> AppConfig:
     return AppConfig()
+
+
+@pytest.fixture
+def data_source(mock_dll) -> MagicMock:
+    """Fixture for data source (DLL interface) — mock version."""
+    return mock_dll
+
+
+@pytest.fixture
+def di_container(app_config, mock_dll) -> DIContainer:
+    """Fixture for DI container with mock data source."""
+    return create_default_container(app_config, mock_dll, is_demo=True)
+
+
+@pytest.fixture
+def di_container_real(app_config, sample_dll_paths) -> DIContainer:
+    """Fixture for DI container with real DLL paths (will fail if DLLs not present)."""
+    try:
+        dll = DLLInterface(sample_dll_paths)
+        return create_default_container(app_config, dll, is_demo=False)
+    except Exception:
+        pytest.skip("Real DLLs not available")
+
+
+@pytest.fixture
+def demo_dll_interface():
+    """Fixture for DemoDLLInterface instance."""
+    from lenovo_tool.core.demo_datasource import DemoDLLInterface
+    return DemoDLLInterface()
+
+
+@pytest.fixture
+def di_container_demo(app_config, demo_dll_interface) -> DIContainer:
+    """Fixture for DI container with DemoDLLInterface."""
+    return create_default_container(app_config, demo_dll_interface, is_demo=True)
