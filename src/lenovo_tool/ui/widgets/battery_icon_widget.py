@@ -5,7 +5,7 @@
 
 from PySide6.QtCore import Qt, QRectF, QPoint
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QLinearGradient, QPolygon
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from lenovo_tool.ui.styles.main_style import (
     BAR_BG, BORDER_SUBTLE, TEXT_PRIMARY,
@@ -19,7 +19,7 @@ class BatteryIconWidget(QWidget):
         self._rsoc = 0
         self._charge_state = "idle"
         self.setMinimumSize(80, 100)
-        self.setSizePolicy(self.sizePolicy().Expanding, self.sizePolicy().Expanding)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def set_data(self, rsoc, charge_state):
         self._rsoc = max(0, min(100, rsoc))
