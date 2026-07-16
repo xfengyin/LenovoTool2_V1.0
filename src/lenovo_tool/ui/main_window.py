@@ -1,11 +1,12 @@
-"""电池监控大屏 — 主窗口模块。
+"""电池监控大屏 - 主窗口（科技感数据监控大屏风格）。
 
-提供高密度企业级监控仪表板界面，实时展示电池各项指标。
-3列布局：左列（仪表盘+环形指标+运行状态）、
-中列（电池图标+容量条+电压详情+功率+会话）、
-右列（容量详情+充电模式）。
-
-UI层仅负责界面组装和事件绑定，业务逻辑由ViewModel处理。
+布局：
+- 顶部：装饰标题栏 + 系统状态
+- 主体：三列面板布局
+  - 左列：寿命预测仪表盘 + 环形指标（RSOC/SOH/TEMP） + 运行状态
+  - 中列：KPI 指标卡（FCC/RM/电压/电流） + 电池图标 + 容量条 + 电压详情
+  - 右列：健康评估 + 功率限制 + 充电模式 + 会话统计
+- 底部：状态栏
 """
 
 import logging
@@ -23,48 +24,30 @@ from lenovo_tool.ui.dialogs.error_dialog import show_error
 from lenovo_tool.ui.styles.main_style import (
     global_stylesheet, TEXT_ACCENT, TEXT_SECONDARY,
     TEXT_LABEL, TEXT_PRIMARY, TEXT_VALUE, STATUS_GOOD,
-    BAR_BG, BORDER_SUBTLE, FONT_XS, FONT_SM, FONT_BASE, FONT_MD, FONT_LG,
+    BAR_BG, BORDER_SUBTLE, BORDER_ACCENT, BORDER_GLOW,
+    FONT_XS, FONT_SM, FONT_BASE, FONT_MD, FONT_LG,
+    GLOW_CYAN, GLOW_GREEN, GLOW_ORANGE, GLOW_BLUE, GLOW_PURPLE, GLOW_RED,
+    BG_PANEL_SOLID,
 )
 from lenovo_tool.ui.view_models.main_view_model import MainViewModel
 from lenovo_tool.ui.widgets.half_gauge_widget import HalfGaugeWidget
 from lenovo_tool.ui.widgets.battery_icon_widget import BatteryIconWidget
 from lenovo_tool.ui.widgets.gradient_bar import GradientBar
 from lenovo_tool.ui.widgets.ring_indicator import RingIndicator
-from lenovo_tool.ui.widgets.status_badge import StatusBadge
+from lenovo_tool.ui.widgets.panel_widget import PanelWidget
+from lenovo_tool.ui.widgets.kpi_card import KpiCard
+from lenovo_tool.ui.widgets.decorative_title_bar import DecorativeTitleBar
 from lenovo_tool.ui.workers.data_worker import DataWorker
 
 logger = logging.getLogger(__name__)
 
 
-def _card(title=None):
-    card = QFrame()
-    card.setObjectName("Card")
-    outer = QVBoxLayout(card)
-    outer.setContentsMargins(0, 0, 0, 0)
-    outer.setSpacing(0)
-    if title:
-        header = QFrame()
-        header.setObjectName("CardHeader")
-        hl = QHBoxLayout(header)
-        hl.setContentsMargins(10, 3, 10, 3)
-        lbl = QLabel(title)
-        lbl.setObjectName("SectionTitle")
-        hl.addWidget(lbl)
-        outer.addWidget(header)
-    body = QVBoxLayout()
-    body.setContentsMargins(6, 3, 6, 3)
-    body.setSpacing(2)
-    outer.addLayout(body)
-    return card, body
-
-
-def _make_label(text, size=FONT_SM, color=TEXT_LABEL, bold=False):
+def _mk_label(text, size=FONT_SM, color=TEXT_LABEL, bold=False):
     lbl = QLabel(text)
     weight = "bold" if bold else "normal"
     lbl.setStyleSheet(
-        f"color: {color}; font-size: {size}px; "
-        f"font-weight: {weight}; border: none; "
-        f"background: transparent;"
+        f"color: {color}; font-size: {size}px; font-weight: {weight}; "
+        f"border: none; background: transparent;"
     )
     return lbl
 
@@ -90,296 +73,319 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
-        root.setContentsMargins(6, 4, 6, 3)
+        root.setContentsMargins(4, 2, 4, 2)
         root.setSpacing(4)
-        root.addLayout(self._build_control_bar())
+
+        root.addWidget(self._build_title_bar())
+        root.addWidget(self._build_control_bar())
         root.addWidget(self._build_main_area(), stretch=1)
-        root.addLayout(self._build_bottom_bar())
+        root.addWidget(self._build_bottom_bar())
+
         self._status_bar = QStatusBar()
         self.setStatusBar(self._status_bar)
-        self._status_bar.showMessage("就绪 — 等待开始监控")
+        self._status_bar.showMessage("\u5c31\u7eea - \u7b49\u5f85\u5f00\u59cb\u76d1\u63a7")
+
         self._setup_event_bindings()
 
     def _setup_event_bindings(self):
         self._view_model.session_stats_updated.connect(self._on_session_stats_updated)
         self._view_model.charge_mode_updated.connect(self._on_charge_mode_updated)
 
+    # ============== 顶部标题栏 ==============
+    def _build_title_bar(self):
+        self._title_bar = DecorativeTitleBar("\u7535\u6c60\u76d1\u63a7\u5927\u5c4f")
+        self._title_bar.set_left_text("\u7cfb\u7edf\u72b6\u6001\uff1a\u5728\u7ebf")
+        self._title_bar.set_right_text("\u65f6\u95f4\uff1a--:--:--")
+        return self._title_bar
+
+    # ============== 控制栏 ==============
     def _build_control_bar(self):
-        layout = QHBoxLayout()
-        layout.setContentsMargins(4, 0, 4, 0)
+        bar = QFrame()
+        bar.setFixedHeight(40)
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(8, 2, 8, 2)
         layout.setSpacing(6)
+
         self._start_btn = QPushButton("\u25b6 \u5f00\u59cb\u76d1\u63a7")
         self._start_btn.setObjectName("PrimaryBtn")
         self._start_btn.setCursor(Qt.PointingHandCursor)
         self._start_btn.clicked.connect(self._start_monitoring)
+        layout.addWidget(self._start_btn)
+
         self._stop_btn = QPushButton("\u25a0 \u7ed3\u675f\u76d1\u63a7")
         self._stop_btn.setObjectName("DangerBtn")
         self._stop_btn.setCursor(Qt.PointingHandCursor)
         self._stop_btn.setEnabled(False)
         self._stop_btn.clicked.connect(self._stop_monitoring)
+        layout.addWidget(self._stop_btn)
+
         self._chart_btn = QPushButton("\U0001f4ca \u5b9e\u65f6\u76d1\u63a7")
         self._chart_btn.setCursor(Qt.PointingHandCursor)
         self._chart_btn.clicked.connect(self._open_chart_window)
+        layout.addWidget(self._chart_btn)
+
         self._log_btn = QPushButton("\U0001f4cb \u65e5\u5fd7\u6570\u636e")
         self._log_btn.setCursor(Qt.PointingHandCursor)
         self._log_btn.clicked.connect(self._open_log_window)
-        layout.addWidget(self._start_btn)
-        layout.addWidget(self._stop_btn)
-        layout.addWidget(self._chart_btn)
         layout.addWidget(self._log_btn)
-        title_lbl = QLabel("\U0001f50b \u7535\u6c60\u76d1\u63a7\u5927\u5c4f")
-        title_lbl.setStyleSheet(
-            f"color: {TEXT_ACCENT}; font-size: {FONT_MD}px; "
-            f"font-weight: bold; border: none; background: transparent;"
-        )
-        title_lbl.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_lbl, stretch=1)
+
+        layout.addStretch()
+
         self._fast_btn = QPushButton("\u26a1 \u667a\u80fd\u5feb\u5145")
         self._fast_btn.setCheckable(True)
         self._fast_btn.setCursor(Qt.PointingHandCursor)
         self._fast_btn.clicked.connect(self._toggle_fast)
+        layout.addWidget(self._fast_btn)
+
         self._night_btn = QPushButton("\U0001f319 \u591c\u95f4\u5145\u7535")
         self._night_btn.setCheckable(True)
         self._night_btn.setCursor(Qt.PointingHandCursor)
         self._night_btn.clicked.connect(self._toggle_night)
-        layout.addWidget(self._fast_btn)
         layout.addWidget(self._night_btn)
-        return layout
 
+        return bar
+
+    # ============== 主体三列 ==============
     def _build_main_area(self):
-        wrapper = QFrame()
-        wrapper.setObjectName("Card")
+        wrapper = QWidget()
         layout = QHBoxLayout(wrapper)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(4, 2, 4, 2)
+        layout.setSpacing(8)
+
         layout.addWidget(self._build_left_column(), stretch=1)
         layout.addWidget(self._build_center_column(), stretch=1)
         layout.addWidget(self._build_right_column(), stretch=1)
+
         return wrapper
 
+    # ============== 左列 ==============
     def _build_left_column(self):
-        outer = QVBoxLayout()
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(4)
-        gauge_card, gauge_body = _card()
-        self._gauge = HalfGaugeWidget()
-        gauge_body.addWidget(self._gauge)
-        outer.addWidget(gauge_card, stretch=3)
-        ring_card, ring_body = _card()
-        ring_layout = QHBoxLayout()
-        ring_layout.setSpacing(8)
-        ring_layout.setAlignment(Qt.AlignCenter)
-        self._rsoc_ring = RingIndicator(title="RSOC", max_val=100, color="#448aff", unit="%", size=68)
-        self._soh_ring = RingIndicator(title="SOH", max_val=100, color="#00e676", unit="%", size=68)
-        self._temp_ring = RingIndicator(title="TEMP", max_val=80, color="#e040fb", unit="\u2103", size=68)
-        for ring, name, color in [
-            (self._rsoc_ring, "RSOC", "#448aff"),
-            (self._soh_ring, "SOH", "#00e676"),
-            (self._temp_ring, "TEMP", "#e040fb"),
-        ]:
-            col = QVBoxLayout()
-            col.setAlignment(Qt.AlignCenter)
-            col.setSpacing(1)
-            rl = _make_label(name, FONT_XS, color, True)
-            rl.setAlignment(Qt.AlignCenter)
-            col.addWidget(ring, alignment=Qt.AlignCenter)
-            col.addWidget(rl)
-            ring_layout.addLayout(col)
-        ring_body.addLayout(ring_layout)
-        outer.addWidget(ring_card, stretch=2)
-        status_card, status_body = _card("\u8fd0\u884c\u72b6\u6001")
-        self._status_badges = []
-        badge_specs = [
-            ("\u25cf", "\u5145\u7535\u72b6\u6001", "#448aff"),
-            ("\u21aa", "\u5faa\u73af\u6b21\u6570", "#ffab40"),
-            ("\u23f1", "\u8fd0\u884c\u65f6\u957f", "#00e676"),
-            ("\U0001f4c5", "\u9996\u6b21\u4f7f\u7528", TEXT_SECONDARY),
-            ("\U0001f321", "\u6700\u9ad8\u6e29\u5ea6", "#e040fb"),
-            ("\U0001f4ca", "\u7535\u538b\u8303\u56f4", "#00e5c8"),
-        ]
-        badge_grid = QGridLayout()
-        badge_grid.setSpacing(2)
-        badge_grid.setContentsMargins(0, 0, 0, 0)
-        for idx, (icon, label, color) in enumerate(badge_specs):
-            badge = StatusBadge(icon=icon, label=label)
-            badge.set_icon(icon, color)
-            self._status_badges.append(badge)
-            badge_grid.addWidget(badge, idx // 2, idx % 2)
-        status_body.addLayout(badge_grid)
-        outer.addWidget(status_card, stretch=2)
-        return self._wrap(outer)
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(6)
 
+        # 寿命预测
+        life_panel = PanelWidget("\u5bff\u547d\u9884\u6d4b")
+        self._gauge = HalfGaugeWidget()
+        life_panel.content_layout.addWidget(self._gauge)
+        col.addWidget(life_panel, stretch=3)
+
+        # 环形指标
+        ring_panel = PanelWidget("\u7535\u6c60\u72b6\u6001")
+        ring_layout = QHBoxLayout()
+        ring_layout.setSpacing(4)
+        ring_layout.setAlignment(Qt.AlignCenter)
+        self._rsoc_ring = RingIndicator(title="RSOC", color=GLOW_CYAN, unit="%", size=92)
+        self._soh_ring = RingIndicator(title="SOH", color=GLOW_GREEN, unit="%", size=92)
+        self._temp_ring = RingIndicator(title="TEMP", color=GLOW_ORANGE, unit="\u2103", max_val=80, size=92)
+        ring_layout.addWidget(self._rsoc_ring)
+        ring_layout.addWidget(self._soh_ring)
+        ring_layout.addWidget(self._temp_ring)
+        ring_panel.content_layout.addLayout(ring_layout)
+        col.addWidget(ring_panel, stretch=3)
+
+        # 运行状态
+        status_panel = PanelWidget("\u8fd0\u884c\u72b6\u6001")
+        self._status_rows = {}
+        for name, color in [
+            ("\u5145\u7535\u72b6\u6001", GLOW_CYAN),
+            ("\u5faa\u73af\u6b21\u6570", GLOW_ORANGE),
+            ("\u9996\u6b21\u4f7f\u7528", TEXT_SECONDARY),
+            ("\u6700\u9ad8\u6e29\u5ea6", GLOW_RED),
+        ]:
+            row = QHBoxLayout()
+            row.setSpacing(6)
+            dot = QLabel()
+            dot.setFixedSize(6, 6)
+            dot.setStyleSheet(f"background-color: {color}; border-radius: 3px; border: none;")
+            row.addWidget(dot)
+            lbl = _mk_label(name, FONT_SM, TEXT_LABEL)
+            lbl.setFixedWidth(64)
+            row.addWidget(lbl)
+            row.addStretch()
+            val = _mk_label("--", FONT_SM, TEXT_VALUE, True)
+            row.addWidget(val)
+            status_panel.content_layout.addLayout(row)
+            self._status_rows[name] = val
+        col.addWidget(status_panel, stretch=2)
+
+        return self._wrap(col)
+
+    # ============== 中列 ==============
     def _build_center_column(self):
-        outer = QVBoxLayout()
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(4)
-        # --- Top: Battery icon + capacity bars ---
-        top_card, top_body = _card()
-        top_layout = QHBoxLayout()
-        top_layout.setSpacing(8)
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(6)
+
+        # KPI 指标卡
+        kpi_panel = PanelWidget("\u5bb9\u91cf\u6307\u6807")
+        kpi_grid = QGridLayout()
+        kpi_grid.setSpacing(4)
+        self._kpi_fcc = KpiCard("FCC (mAh)", color=GLOW_CYAN, suffix="")
+        self._kpi_rm = KpiCard("RM (mAh)", color=GLOW_BLUE, suffix="")
+        self._kpi_rsoc = KpiCard("RSOC", color=GLOW_GREEN, suffix="%")
+        self._kpi_current = KpiCard("\u7535\u6d41", color=GLOW_ORANGE, suffix=" mA")
+        kpi_grid.addWidget(self._kpi_fcc, 0, 0)
+        kpi_grid.addWidget(self._kpi_rm, 0, 1)
+        kpi_grid.addWidget(self._kpi_rsoc, 1, 0)
+        kpi_grid.addWidget(self._kpi_current, 1, 1)
+        kpi_panel.content_layout.addLayout(kpi_grid)
+        col.addWidget(kpi_panel, stretch=3)
+
+        # 电池图标 + 容量条
+        bat_panel = PanelWidget("\u7535\u6c60\u72b6\u6001")
+        bat_layout = QHBoxLayout()
+        bat_layout.setSpacing(8)
         self._battery_icon = BatteryIconWidget()
-        top_layout.addWidget(self._battery_icon, alignment=Qt.AlignCenter)
-        cap_col = QVBoxLayout()
-        cap_col.setSpacing(4)
-        self._fcc_bar = GradientBar(height=12)
-        self._fcc_bar_val = None
-        self._rm_bar = GradientBar(height=12)
-        self._rm_bar_val = None
-        self._dc_bar = GradientBar(height=12)
-        self._dc_bar_val = None
-        for name, color, bar, attr_bar, attr_val in [
-            ("FCC", "#00e5c8", self._fcc_bar, "_fcc_bar", "_fcc_bar_val"),
-            ("RM", "#448aff", self._rm_bar, "_rm_bar", "_rm_bar_val"),
-            ("DC", "#00e676", self._dc_bar, "_dc_bar", "_dc_bar_val"),
+        self._battery_icon.setMinimumSize(100, 130)
+        bat_layout.addWidget(self._battery_icon)
+
+        bar_col = QVBoxLayout()
+        bar_col.setSpacing(4)
+        self._fcc_bar = GradientBar(height=10)
+        self._fcc_val = _mk_label("--%", FONT_XS, GLOW_CYAN, True)
+        self._rm_bar = GradientBar(height=10)
+        self._rm_val = _mk_label("--%", FONT_XS, GLOW_BLUE, True)
+        for name, bar, val, color in [
+            ("FCC", self._fcc_bar, self._fcc_val, GLOW_CYAN),
+            ("RM", self._rm_bar, self._rm_val, GLOW_BLUE),
         ]:
             row = QHBoxLayout()
             row.setSpacing(4)
-            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
-            lbl.setFixedWidth(28)
-            row.addWidget(lbl)
+            lab = _mk_label(name, FONT_XS, TEXT_LABEL)
+            lab.setFixedWidth(30)
+            row.addWidget(lab)
             row.addWidget(bar, stretch=1)
-            val = _make_label("--%", FONT_XS, TEXT_VALUE, True)
-            val.setFixedWidth(40)
+            val.setFixedWidth(42)
             val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             row.addWidget(val)
-            cap_col.addLayout(row)
-            setattr(self, attr_val, val)
-        top_layout.addLayout(cap_col, stretch=1)
-        top_body.addLayout(top_layout)
-        outer.addWidget(top_card, stretch=2)
-        # --- Middle: Voltage details (real data, replaces fake cell voltages) ---
-        volt_card, volt_body = _card("\u7535\u538b\u8be6\u60c5")
-        self._volt_bar = GradientBar(height=12)
-        self._volt_bar_val = _make_label("-- mV", FONT_SM, TEXT_VALUE, True)
+            bar_col.addLayout(row)
+        bat_layout.addLayout(bar_col, stretch=1)
+        bat_panel.content_layout.addLayout(bat_layout)
+        col.addWidget(bat_panel, stretch=2)
+
+        # 电压详情
+        volt_panel = PanelWidget("\u7535\u538b\u8be6\u60c5")
+        self._volt_bar = GradientBar(height=10)
+        self._volt_bar_val = _mk_label("-- mV", FONT_SM, TEXT_VALUE, True)
         self._volt_bar_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         v_row1 = QHBoxLayout()
         v_row1.setSpacing(4)
-        v_row1.addWidget(_make_label("\u5f53\u524d\u7535\u538b", FONT_XS, TEXT_LABEL))
+        v_row1.addWidget(_mk_label("\u5f53\u524d\u7535\u538b", FONT_SM, TEXT_LABEL))
         v_row1.addWidget(self._volt_bar, stretch=1)
         v_row1.addWidget(self._volt_bar_val)
-        volt_body.addLayout(v_row1)
-        self._dv_lbl = _make_label("\u8bbe\u8ba1\u7535\u538b: -- mV", FONT_XS, TEXT_SECONDARY)
-        self._vmin_lbl = _make_label("\u6700\u4f4e\u7535\u538b: -- mV", FONT_XS, TEXT_SECONDARY)
-        self._vmax_lbl = _make_label("\u6700\u9ad8\u7535\u538b: -- mV", FONT_XS, TEXT_SECONDARY)
-        volt_body.addWidget(self._dv_lbl)
-        volt_body.addWidget(self._vmin_lbl)
-        volt_body.addWidget(self._vmax_lbl)
-        outer.addWidget(volt_card, stretch=2)
-        # --- Bottom: Power limits & session stats ---
-        bottom_card, bottom_body = _card("\u529f\u7387\u9650\u5236 & \u4f1a\u8bdd")
-        bot_layout = QHBoxLayout()
-        bot_layout.setSpacing(8)
-        pl_col = QVBoxLayout()
-        pl_col.setSpacing(3)
+        volt_panel.content_layout.addLayout(v_row1)
+
+        self._dv_lbl = _mk_label("\u8bbe\u8ba1\u7535\u538b: -- mV", FONT_SM, TEXT_SECONDARY)
+        self._vmin_lbl = _mk_label("\u6700\u4f4e\u7535\u538b: -- mV", FONT_SM, TEXT_SECONDARY)
+        self._vmax_lbl = _mk_label("\u6700\u9ad8\u7535\u538b: -- mV", FONT_SM, TEXT_SECONDARY)
+        volt_panel.content_layout.addWidget(self._dv_lbl)
+        volt_panel.content_layout.addWidget(self._vmin_lbl)
+        volt_panel.content_layout.addWidget(self._vmax_lbl)
+        col.addWidget(volt_panel, stretch=2)
+
+        return self._wrap(col)
+
+    # ============== 右列 ==============
+    def _build_right_column(self):
+        col = QVBoxLayout()
+        col.setContentsMargins(0, 0, 0, 0)
+        col.setSpacing(6)
+
+        # 健康评估
+        health_panel = PanelWidget("\u5065\u5eb7\u8bc4\u4f30")
+        health_grid = QGridLayout()
+        health_grid.setSpacing(4)
+        self._health_kpi_soh = KpiCard("SOH", color=GLOW_GREEN, suffix="%")
+        self._health_kpi_cycle = KpiCard("\u5faa\u73af\u6b21\u6570", color=GLOW_ORANGE, suffix="")
+        health_grid.addWidget(self._health_kpi_soh, 0, 0)
+        health_grid.addWidget(self._health_kpi_cycle, 0, 1)
+        health_panel.content_layout.addLayout(health_grid)
+
+        degrade_row = QHBoxLayout()
+        degrade_row.addWidget(_mk_label("\u8870\u51cf\u7387", FONT_SM, TEXT_LABEL))
+        degrade_row.addStretch()
+        self._degrade_val = _mk_label("--%", FONT_SM, TEXT_VALUE, True)
+        degrade_row.addWidget(self._degrade_val)
+        health_panel.content_layout.addLayout(degrade_row)
+
+        self._health_bar = GradientBar(height=8)
+        health_panel.content_layout.addWidget(self._health_bar)
+        col.addWidget(health_panel, stretch=2)
+
+        # 功率限制
+        power_panel = PanelWidget("\u529f\u7387\u9650\u5236")
         self._pl_rows = {}
-        for name, desc in [
-            ("PL1", "\u6301\u7eed\u529f\u7387"),
-            ("PL2", "\u7206\u53d1\u529f\u7387"),
-            ("PL4", "\u6781\u9650\u529f\u7387"),
+        for name, desc, color in [
+            ("PL1", "\u6301\u7eed\u529f\u7387", GLOW_CYAN),
+            ("PL2", "\u7206\u53d1\u529f\u7387", GLOW_ORANGE),
+            ("PL4", "\u6781\u9650\u529f\u7387", GLOW_RED),
         ]:
             row = QHBoxLayout()
-            row.setSpacing(4)
-            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
-            lbl.setFixedWidth(28)
-            row.addWidget(lbl)
-            val = _make_label("-- W", FONT_BASE, TEXT_VALUE, True)
+            row.setSpacing(6)
+            lab = _mk_label(name, FONT_SM, color, True)
+            lab.setFixedWidth(36)
+            row.addWidget(lab)
+            val = _mk_label("-- W", FONT_SM, TEXT_VALUE, True)
             row.addWidget(val)
             row.addStretch()
-            sub = _make_label(desc, FONT_XS, TEXT_SECONDARY)
-            pl_col.addLayout(row)
-            pl_col.addWidget(sub)
+            sub = _mk_label(desc, FONT_XS, TEXT_SECONDARY)
+            row.addWidget(sub)
+            power_panel.content_layout.addLayout(row)
             self._pl_rows[name] = val
-        bot_layout.addLayout(pl_col)
-        sep_v = QFrame()
-        sep_v.setFrameShape(QFrame.VLine)
-        sep_v.setStyleSheet(f"background-color: {BORDER_SUBTLE}; max-width: 1px;")
-        bot_layout.addWidget(sep_v)
-        sess_col = QVBoxLayout()
-        sess_col.setSpacing(3)
+        col.addWidget(power_panel, stretch=1)
+
+        # 充电模式
+        mode_panel = PanelWidget("\u5145\u7535\u6a21\u5f0f")
+        mode_layout = QHBoxLayout()
+        mode_layout.setSpacing(6)
+        self._fast_card = self._mk_mode_card("\u26a1", "\u5feb\u5145", GLOW_GREEN, False)
+        self._night_card = self._mk_mode_card("\U0001f319", "\u591c\u5145", GLOW_BLUE, False)
+        mode_layout.addWidget(self._fast_card)
+        mode_layout.addWidget(self._night_card)
+        mode_panel.content_layout.addLayout(mode_layout)
+        col.addWidget(mode_panel, stretch=1)
+
+        # 会话统计
+        sess_panel = PanelWidget("\u4f1a\u8bdd\u7edf\u8ba1")
         self._sess_labels = {}
         for name in ["\u91c7\u6837\u6b21\u6570", "\u5e73\u5747\u7535\u538b", "\u5e73\u5747\u7535\u6d41", "\u5e73\u5747\u6e29\u5ea6", "\u5e73\u5747\u529f\u7387"]:
             row = QHBoxLayout()
             row.setSpacing(4)
-            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
+            lbl = _mk_label(name, FONT_SM, TEXT_LABEL)
             row.addWidget(lbl)
             row.addStretch()
-            val = _make_label("--", FONT_XS, TEXT_VALUE, True)
+            val = _mk_label("--", FONT_SM, TEXT_VALUE, True)
             row.addWidget(val)
-            sess_col.addLayout(row)
+            sess_panel.content_layout.addLayout(row)
             self._sess_labels[name] = val
-        bot_layout.addLayout(sess_col)
-        bottom_body.addLayout(bot_layout)
-        outer.addWidget(bottom_card, stretch=2)
-        return self._wrap(outer)
+        col.addWidget(sess_panel, stretch=2)
 
-    def _build_right_column(self):
-        outer = QVBoxLayout()
-        outer.setContentsMargins(0, 0, 0, 0)
-        outer.setSpacing(4)
-        # --- Capacity details (replaces duplicate session stats) ---
-        cap_card, cap_body = _card("\u5bb9\u91cf\u8be6\u60c5")
-        self._cap_labels = {}
-        for name in ["FCC", "RM", "DC", "\u5065\u5eb7\u5ea6"]:
-            row = QHBoxLayout()
-            row.setSpacing(4)
-            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
-            row.addWidget(lbl)
-            row.addStretch()
-            val = _make_label("--", FONT_SM, TEXT_VALUE, True)
-            row.addWidget(val)
-            cap_body.addLayout(row)
-            self._cap_labels[name] = val
-        outer.addWidget(cap_card, stretch=2)
-        # --- Health assessment (replaces duplicate life prediction) ---
-        health_card, health_body = _card("\u5065\u5eb7\u8bc4\u4f30")
-        self._soh_val_lbl = _make_label("SOH: --%", FONT_SM, TEXT_VALUE, True)
-        health_body.addWidget(self._soh_val_lbl)
-        self._cycle_val_lbl = _make_label("\u5faa\u73af\u6b21\u6570: --", FONT_SM, TEXT_SECONDARY)
-        health_body.addWidget(self._cycle_val_lbl)
-        self._degrade_val_lbl = _make_label("\u8870\u51cf\u7387: --%", FONT_SM, TEXT_SECONDARY)
-        health_body.addWidget(self._degrade_val_lbl)
-        outer.addWidget(health_card, stretch=2)
-        # --- Charge mode ---
-        mode_card, mode_body = _card("\u5145\u7535\u6a21\u5f0f")
-        mode_layout = QHBoxLayout()
-        mode_layout.setSpacing(6)
-        self._fast_mode_card = QFrame()
-        self._fast_mode_card.setStyleSheet(
-            f"background: #0d2818; border: 1px solid {STATUS_GOOD}; "
-            f"border-radius: 4px; padding: 4px;"
+        return self._wrap(col)
+
+    def _mk_mode_card(self, icon, label, color, active):
+        card = QFrame()
+        card.setMinimumHeight(70)
+        bg = "rgba(0, 80, 100, 0.3)" if active else BG_PANEL_SOLID
+        border = color if active else BORDER_ACCENT
+        card.setStyleSheet(
+            f"background: {bg}; border: 1px solid {border}; "
+            f"border-radius: 4px;"
         )
-        fast_inner = QVBoxLayout(self._fast_mode_card)
-        fast_inner.setAlignment(Qt.AlignCenter)
-        fi = _make_label("\u26a1", FONT_LG, STATUS_GOOD, True)
-        fi.setAlignment(Qt.AlignCenter)
-        fast_inner.addWidget(fi)
-        self._fast_mode_label = _make_label("\u5feb\u5145", FONT_SM, STATUS_GOOD, True)
-        self._fast_mode_label.setAlignment(Qt.AlignCenter)
-        fast_inner.addWidget(self._fast_mode_label)
-        self._fast_mode_state = _make_label("OFF", FONT_XS, "#5a6a7a", True)
-        self._fast_mode_state.setAlignment(Qt.AlignCenter)
-        fast_inner.addWidget(self._fast_mode_state)
-        self._night_mode_card = QFrame()
-        self._night_mode_card.setStyleSheet(
-            f"background: {BAR_BG}; border: 1px solid {BORDER_SUBTLE}; "
-            f"border-radius: 4px; padding: 4px;"
-        )
-        night_inner = QVBoxLayout(self._night_mode_card)
-        night_inner.setAlignment(Qt.AlignCenter)
-        ni = _make_label("\U0001f319", FONT_LG, "#7a8fa3", True)
-        ni.setAlignment(Qt.AlignCenter)
-        night_inner.addWidget(ni)
-        self._night_mode_label = _make_label("\u591c\u5145", FONT_SM, "#7a8fa3", True)
-        self._night_mode_label.setAlignment(Qt.AlignCenter)
-        night_inner.addWidget(self._night_mode_label)
-        self._night_mode_state = _make_label("OFF", FONT_XS, "#5a6a7a", True)
-        self._night_mode_state.setAlignment(Qt.AlignCenter)
-        night_inner.addWidget(self._night_mode_state)
-        mode_layout.addWidget(self._fast_mode_card)
-        mode_layout.addWidget(self._night_mode_card)
-        mode_body.addLayout(mode_layout)
-        outer.addWidget(mode_card, stretch=1)
-        return self._wrap(outer)
+        inner = QVBoxLayout(card)
+        inner.setAlignment(Qt.AlignCenter)
+        inner.setSpacing(2)
+        ic = _mk_label(icon, FONT_LG, color, True)
+        ic.setAlignment(Qt.AlignCenter)
+        inner.addWidget(ic)
+        lb = _mk_label(label, FONT_SM, color, True)
+        lb.setAlignment(Qt.AlignCenter)
+        inner.addWidget(lb)
+        st = _mk_label("ON" if active else "OFF", FONT_XS, color if active else TEXT_SECONDARY, True)
+        st.setAlignment(Qt.AlignCenter)
+        inner.addWidget(st)
+        card._state_label = st
+        return card
 
     def _wrap(self, layout):
         w = QWidget()
@@ -387,16 +393,19 @@ class MainWindow(QMainWindow):
         return w
 
     def _build_bottom_bar(self):
-        layout = QHBoxLayout()
-        layout.setContentsMargins(4, 0, 4, 0)
+        bar = QFrame()
+        bar.setFixedHeight(28)
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(8, 0, 8, 0)
         layout.setSpacing(12)
-        layout.addStretch()
-        self._runtime_lbl = _make_label("\u8fd0\u884c: 00:00:00", FONT_BASE, TEXT_SECONDARY)
+        self._runtime_lbl = _mk_label("\u8fd0\u884c: 00:00:00", FONT_BASE, TEXT_SECONDARY)
         layout.addWidget(self._runtime_lbl)
-        self._timestamp_lbl = _make_label("--:--:--", FONT_BASE, TEXT_SECONDARY)
+        layout.addStretch()
+        self._timestamp_lbl = _mk_label("--:--:--", FONT_BASE, TEXT_SECONDARY)
         layout.addWidget(self._timestamp_lbl)
-        return layout
+        return bar
 
+    # ============== 控制逻辑 ==============
     def _start_monitoring(self):
         if self._worker is not None:
             return
@@ -412,6 +421,7 @@ class MainWindow(QMainWindow):
         self._start_btn.setEnabled(False)
         self._stop_btn.setEnabled(True)
         self._status_bar.showMessage("\u76d1\u63a7\u8fd0\u884c\u4e2d...")
+        self._title_bar.set_left_text("\u7cfb\u7edf\u72b6\u6001\uff1a\u76d1\u63a7\u4e2d")
         logger.info("监控已启动")
 
     def _stop_monitoring(self):
@@ -424,6 +434,7 @@ class MainWindow(QMainWindow):
         self._start_btn.setEnabled(True)
         self._stop_btn.setEnabled(False)
         self._status_bar.showMessage("\u76d1\u63a7\u5df2\u505c\u6b62")
+        self._title_bar.set_left_text("\u7cfb\u7edf\u72b6\u6001\uff1a\u5df2\u505c\u6b62")
         logger.info("监控已停止")
 
     @Slot(BatterySnapshot)
@@ -431,16 +442,17 @@ class MainWindow(QMainWindow):
         self._view_model.process_snapshot(snapshot)
         self._update_gauge(snapshot)
         self._update_rings(snapshot)
-        self._update_status_badges(snapshot)
+        self._update_status_rows(snapshot)
         self._update_battery_icon(snapshot)
+        self._update_kpis(snapshot)
         self._update_capacity_bars(snapshot)
         self._update_voltage_details(snapshot)
-        self._update_power_limits(snapshot)
-        self._update_capacity_details(snapshot)
         self._update_health(snapshot)
+        self._update_power_limits(snapshot)
         if self._chart_window is not None and self._chart_window.isVisible():
             self._chart_window.on_snapshot(snapshot)
         self._timestamp_lbl.setText(snapshot.timestamp.strftime('%H:%M:%S'))
+        self._title_bar.set_right_text(f"\u65f6\u95f4\uff1a{snapshot.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
         self._status_bar.showMessage(self._view_model.get_status_bar_text(snapshot))
 
     @Slot(Exception)
@@ -464,9 +476,24 @@ class MainWindow(QMainWindow):
 
     @Slot(bool, bool)
     def _on_charge_mode_updated(self, is_fast: bool, is_night: bool):
-        self._update_fast_mode_ui(is_fast)
-        self._update_night_mode_ui(is_night)
+        self._update_mode_card(self._fast_card, GLOW_GREEN, is_fast)
+        self._update_mode_card(self._night_card, GLOW_BLUE, is_night)
 
+    def _update_mode_card(self, card, color, active):
+        bg = "rgba(0, 80, 60, 0.4)" if active else BG_PANEL_SOLID
+        border = color if active else BORDER_ACCENT
+        card.setStyleSheet(
+            f"background: {bg}; border: 1px solid {border}; border-radius: 4px;"
+        )
+        if hasattr(card, '_state_label'):
+            card._state_label.setText("ON" if active else "OFF")
+            c = color if active else TEXT_SECONDARY
+            card._state_label.setStyleSheet(
+                f"color: {c}; font-size: {FONT_XS}px; font-weight: bold; "
+                f"border: none; background: transparent;"
+            )
+
+    # ============== 数据更新 ==============
     def _update_gauge(self, s):
         self._gauge.setValue(s.predicted_life_months)
 
@@ -475,114 +502,71 @@ class MainWindow(QMainWindow):
         self._soh_ring.setValue(float(s.soh))
         self._temp_ring.setValue(s.temperature)
 
-    def _update_status_badges(self, s):
-        if len(self._status_badges) < 6:
-            return
+    def _update_status_rows(self, s):
         state_text, state_color = self._view_model.format_charge_state(s.charge_state)
-        self._status_badges[0].set_value(state_text, state_color)
-        self._status_badges[1].set_value(str(s.cycle_count), TEXT_PRIMARY)
-        self._status_badges[2].set_value(self._view_model.format_runtime(), TEXT_PRIMARY)
-        self._status_badges[3].set_value(s.first_usage_time, TEXT_SECONDARY)
-        temp_color = self._view_model.format_temperature_color(s.max_temperature)
-        self._status_badges[4].set_value(f"{s.max_temperature:.1f}\u2103", temp_color)
-        self._status_badges[5].set_value(self._view_model.get_voltage_range_text(s), TEXT_PRIMARY)
+        if "\u5145\u7535\u72b6\u6001" in self._status_rows:
+            self._status_rows["\u5145\u7535\u72b6\u6001"].setText(state_text)
+            self._status_rows["\u5145\u7535\u72b6\u6001"].setStyleSheet(
+                f"color: {state_color}; font-size: {FONT_SM}px; font-weight: bold; "
+                f"border: none; background: transparent;"
+            )
+        if "\u5faa\u73af\u6b21\u6570" in self._status_rows:
+            self._status_rows["\u5faa\u73af\u6b21\u6570"].setText(str(s.cycle_count))
+        if "\u9996\u6b21\u4f7f\u7528" in self._status_rows:
+            self._status_rows["\u9996\u6b21\u4f7f\u7528"].setText(s.first_usage_time)
+        if "\u6700\u9ad8\u6e29\u5ea6" in self._status_rows:
+            self._status_rows["\u6700\u9ad8\u6e29\u5ea6"].setText(f"{s.max_temperature:.1f}\u2103")
 
     def _update_battery_icon(self, s):
         self._battery_icon.set_data(s.rsoc, s.charge_state)
 
+    def _update_kpis(self, s):
+        self._kpi_fcc.set_value(s.fcc)
+        self._kpi_rm.set_value(s.rm)
+        self._kpi_rsoc.set_value(s.rsoc)
+        self._kpi_current.set_value(s.current)
+        self._health_kpi_soh.set_value(s.soh)
+        self._health_kpi_cycle.set_value(s.cycle_count)
+
     def _update_capacity_bars(self, s):
         fcc_pct, rm_pct = self._view_model.calculate_capacity_percentages(s)
-        self._fcc_bar.setValue(fcc_pct, "#00e5c8")
-        self._fcc_bar_val.setText(f"{fcc_pct:.1f}%")
-        self._rm_bar.setValue(rm_pct, "#448aff")
-        self._rm_bar_val.setText(f"{rm_pct:.1f}%")
-        self._dc_bar.setValue(100.0, "#00e676")
-        self._dc_bar_val.setText("100%")
+        self._fcc_bar.setValue(fcc_pct, GLOW_CYAN)
+        self._fcc_val.setText(f"{fcc_pct:.1f}%")
+        self._rm_bar.setValue(rm_pct, GLOW_BLUE)
+        self._rm_val.setText(f"{rm_pct:.1f}%")
 
     def _update_voltage_details(self, s):
-        """Update voltage display with real data from snapshot."""
         dv = s.dv if s.dv > 0 else 1
         volt_pct = min(100.0, s.voltage / dv * 100)
-        volt_color = "#ff5252" if s.voltage > dv * 1.05 else ("#ffab40" if s.voltage < dv * 0.9 else "#00e5c8")
-        self._volt_bar.setValue(volt_pct, volt_color)
+        if s.voltage > dv * 1.05:
+            vc = GLOW_RED
+        elif s.voltage < dv * 0.9:
+            vc = GLOW_ORANGE
+        else:
+            vc = GLOW_CYAN
+        self._volt_bar.setValue(volt_pct, vc)
         self._volt_bar_val.setText(f"{s.voltage} mV")
         self._dv_lbl.setText(f"\u8bbe\u8ba1\u7535\u538b: {s.dv} mV")
         self._vmin_lbl.setText(f"\u6700\u4f4e\u7535\u538b: {s.min_voltage} mV" if s.min_voltage else "\u6700\u4f4e\u7535\u538b: -- mV")
         self._vmax_lbl.setText(f"\u6700\u9ad8\u7535\u538b: {s.max_voltage} mV" if s.max_voltage else "\u6700\u9ad8\u7535\u538b: -- mV")
+
+    def _update_health(self, s):
+        health = s.fcc / s.dc * 100 if s.dc > 0 else 0
+        degrade = 100 - health
+        self._health_bar.setValue(health, GLOW_GREEN if health > 80 else (GLOW_ORANGE if health > 50 else GLOW_RED))
+        dc = GLOW_GREEN if degrade < 20 else (GLOW_ORANGE if degrade < 50 else GLOW_RED)
+        self._degrade_val.setText(f"{degrade:.1f}%")
+        self._degrade_val.setStyleSheet(
+            f"color: {dc}; font-size: {FONT_SM}px; font-weight: bold; "
+            f"border: none; background: transparent;"
+        )
 
     def _update_power_limits(self, s):
         for name, val in [("PL1", s.pl1), ("PL2", s.pl2), ("PL4", s.pl4)]:
             if name in self._pl_rows:
                 self._pl_rows[name].setText(f"{val} W")
 
-    def _update_capacity_details(self, s):
-        """Update capacity details card with real mAh values."""
-        if "FCC" in self._cap_labels:
-            self._cap_labels["FCC"].setText(f"{s.fcc} mAh")
-        if "RM" in self._cap_labels:
-            self._cap_labels["RM"].setText(f"{s.rm} mAh")
-        if "DC" in self._cap_labels:
-            self._cap_labels["DC"].setText(f"{s.dc} mAh")
-        if "\u5065\u5eb7\u5ea6" in self._cap_labels:
-            health = s.fcc / s.dc * 100 if s.dc > 0 else 0
-            self._cap_labels["\u5065\u5eb7\u5ea6"].setText(f"{health:.1f}%")
-
-    def _update_health(self, s):
-        """Update health assessment card."""
-        self._soh_val_lbl.setText(f"SOH: {s.soh}%")
-        self._cycle_val_lbl.setText(f"\u5faa\u73af\u6b21\u6570: {s.cycle_count}")
-        degrade = (1 - s.fcc / s.dc) * 100 if s.dc > 0 else 0
-        degrade_color = "#ff5252" if degrade > 30 else ("#ffab40" if degrade > 15 else TEXT_SECONDARY)
-        self._degrade_val_lbl.setText(f"\u8870\u51cf\u7387: {degrade:.1f}%")
-        self._degrade_val_lbl.setStyleSheet(
-            f"color: {degrade_color}; font-size: {FONT_SM}px; "
-            f"border: none; background: transparent;"
-        )
-
-    def _update_fast_mode_ui(self, is_fast: bool):
-        if is_fast:
-            self._fast_mode_card.setStyleSheet(
-                f"background: #0d2818; border: 1px solid {STATUS_GOOD}; "
-                f"border-radius: 4px; padding: 4px;"
-            )
-            self._fast_mode_state.setText("ON")
-            self._fast_mode_state.setStyleSheet(
-                f"color: {STATUS_GOOD}; font-size: {FONT_XS}px; "
-                f"font-weight: bold; border: none; background: transparent;"
-            )
-        else:
-            self._fast_mode_card.setStyleSheet(
-                f"background: {BAR_BG}; border: 1px solid {BORDER_SUBTLE}; "
-                f"border-radius: 4px; padding: 4px;"
-            )
-            self._fast_mode_state.setText("OFF")
-            self._fast_mode_state.setStyleSheet(
-                f"color: #5a6a7a; font-size: {FONT_XS}px; "
-                f"font-weight: bold; border: none; background: transparent;"
-            )
-
-    def _update_night_mode_ui(self, is_night: bool):
-        if is_night:
-            self._night_mode_card.setStyleSheet(
-                f"background: #0d1a2e; border: 1px solid #448aff; "
-                f"border-radius: 4px; padding: 4px;"
-            )
-            self._night_mode_state.setText("ON")
-            self._night_mode_state.setStyleSheet(
-                f"color: #448aff; font-size: {FONT_XS}px; "
-                f"font-weight: bold; border: none; background: transparent;"
-            )
-        else:
-            self._night_mode_card.setStyleSheet(
-                f"background: {BAR_BG}; border: 1px solid {BORDER_SUBTLE}; "
-                f"border-radius: 4px; padding: 4px;"
-            )
-            self._night_mode_state.setText("OFF")
-            self._night_mode_state.setStyleSheet(
-                f"color: #5a6a7a; font-size: {FONT_XS}px; "
-                f"font-weight: bold; border: none; background: transparent;"
-            )
-
+    # ============== 窗口操作 ==============
     def _open_chart_window(self):
         if self._chart_window is None:
             self._chart_window = ChartWindow(self._config, parent=self)
