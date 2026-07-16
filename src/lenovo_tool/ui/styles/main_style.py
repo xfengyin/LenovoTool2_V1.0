@@ -35,6 +35,21 @@ CHART_CURRENT = "#ffab40"
 CHART_FCC = "#448aff"
 CHART_RM = "#e040fb"
 
+# ---------------------------------------------------------------------------
+# Font size scale (design tokens)
+# ---------------------------------------------------------------------------
+FONT_XS = 8       # sub-labels, tick marks
+FONT_SM = 9       # labels, small values
+FONT_BASE = 11    # body text
+FONT_MD = 13      # section titles, buttons
+FONT_LG = 16      # card headers, prominent labels
+FONT_XL = 22      # large value displays
+FONT_HUGE = 32    # hero numbers
+
+# Bar / gauge background colors (reused across widgets)
+BAR_BG = "#1a2a3a"
+BAR_RADIUS = 3
+
 
 def global_stylesheet() -> str:
     """Return the application-wide QSS stylesheet."""

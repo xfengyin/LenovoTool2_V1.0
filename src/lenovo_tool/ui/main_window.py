@@ -2,14 +2,13 @@
 
 提供高密度企业级监控仪表板界面，实时展示电池各项指标。
 3列布局：左列（仪表盘+环形指标+运行状态）、
-中列（电池图标+容量条+电芯+功率+会话）、
-右列（参数表+寿命预测+充电模式）。
+中列（电池图标+容量条+电压详情+功率+会话）、
+右列（容量详情+充电模式）。
 
 UI层仅负责界面组装和事件绑定，业务逻辑由ViewModel处理。
 """
 
 import logging
-import random as _random
 
 from PySide6.QtCore import Qt, Slot
 from PySide6.QtWidgets import (
@@ -24,11 +23,12 @@ from lenovo_tool.ui.dialogs.error_dialog import show_error
 from lenovo_tool.ui.styles.main_style import (
     global_stylesheet, TEXT_ACCENT, TEXT_SECONDARY,
     TEXT_LABEL, TEXT_PRIMARY, TEXT_VALUE, STATUS_GOOD,
+    BAR_BG, BORDER_SUBTLE, FONT_XS, FONT_SM, FONT_BASE, FONT_MD, FONT_LG,
 )
 from lenovo_tool.ui.view_models.main_view_model import MainViewModel
 from lenovo_tool.ui.widgets.half_gauge_widget import HalfGaugeWidget
 from lenovo_tool.ui.widgets.battery_icon_widget import BatteryIconWidget
-from lenovo_tool.ui.widgets.life_prediction_widget import LifePredictionWidget
+from lenovo_tool.ui.widgets.gradient_bar import GradientBar
 from lenovo_tool.ui.widgets.ring_indicator import RingIndicator
 from lenovo_tool.ui.widgets.status_badge import StatusBadge
 from lenovo_tool.ui.workers.data_worker import DataWorker
@@ -58,7 +58,7 @@ def _card(title=None):
     return card, body
 
 
-def _make_label(text, size=11, color=TEXT_LABEL, bold=False):
+def _make_label(text, size=FONT_SM, color=TEXT_LABEL, bold=False):
     lbl = QLabel(text)
     weight = "bold" if bold else "normal"
     lbl.setStyleSheet(
@@ -67,16 +67,6 @@ def _make_label(text, size=11, color=TEXT_LABEL, bold=False):
         f"background: transparent;"
     )
     return lbl
-
-
-def _update_bar(frame, pct, color):
-    pct = max(0.0, min(100.0, pct))
-    frame.setStyleSheet(
-        f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0, "
-        f"stop:0 {color}, stop:{pct / 100} {color}, "
-        f"stop:{pct / 100} #1a2a3a, stop:1 #1a2a3a); "
-        f"border-radius: 3px;"
-    )
 
 
 class MainWindow(QMainWindow):
@@ -139,7 +129,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._log_btn)
         title_lbl = QLabel("\U0001f50b \u7535\u6c60\u76d1\u63a7\u5927\u5c4f")
         title_lbl.setStyleSheet(
-            f"color: {TEXT_ACCENT}; font-size: 16px; "
+            f"color: {TEXT_ACCENT}; font-size: {FONT_MD}px; "
             f"font-weight: bold; border: none; background: transparent;"
         )
         title_lbl.setAlignment(Qt.AlignCenter)
@@ -190,7 +180,7 @@ class MainWindow(QMainWindow):
             col = QVBoxLayout()
             col.setAlignment(Qt.AlignCenter)
             col.setSpacing(1)
-            rl = _make_label(name, 9, color, True)
+            rl = _make_label(name, FONT_XS, color, True)
             rl.setAlignment(Qt.AlignCenter)
             col.addWidget(ring, alignment=Qt.AlignCenter)
             col.addWidget(rl)
@@ -223,6 +213,7 @@ class MainWindow(QMainWindow):
         outer = QVBoxLayout()
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(4)
+        # --- Top: Battery icon + capacity bars ---
         top_card, top_body = _card()
         top_layout = QHBoxLayout()
         top_layout.setSpacing(8)
@@ -230,60 +221,51 @@ class MainWindow(QMainWindow):
         top_layout.addWidget(self._battery_icon, alignment=Qt.AlignCenter)
         cap_col = QVBoxLayout()
         cap_col.setSpacing(4)
-        self._fcc_bar_frame = None
+        self._fcc_bar = GradientBar(height=12)
         self._fcc_bar_val = None
-        self._rm_bar_frame = None
+        self._rm_bar = GradientBar(height=12)
         self._rm_bar_val = None
-        self._dc_bar_frame = None
+        self._dc_bar = GradientBar(height=12)
         self._dc_bar_val = None
-        for name, color in [("FCC", "#00e5c8"), ("RM", "#448aff"), ("DC", "#00e676")]:
+        for name, color, bar, attr_bar, attr_val in [
+            ("FCC", "#00e5c8", self._fcc_bar, "_fcc_bar", "_fcc_bar_val"),
+            ("RM", "#448aff", self._rm_bar, "_rm_bar", "_rm_bar_val"),
+            ("DC", "#00e676", self._dc_bar, "_dc_bar", "_dc_bar_val"),
+        ]:
             row = QHBoxLayout()
             row.setSpacing(4)
-            lbl = _make_label(name, 9, TEXT_LABEL)
+            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
             lbl.setFixedWidth(28)
             row.addWidget(lbl)
-            bar = QFrame()
-            bar.setFixedHeight(12)
-            bar.setStyleSheet("background: #1a2a3a; border-radius: 3px;")
             row.addWidget(bar, stretch=1)
-            val = _make_label("--%", 9, TEXT_VALUE, True)
+            val = _make_label("--%", FONT_XS, TEXT_VALUE, True)
             val.setFixedWidth(40)
             val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             row.addWidget(val)
             cap_col.addLayout(row)
-            if name == "FCC":
-                self._fcc_bar_frame = bar
-                self._fcc_bar_val = val
-            elif name == "RM":
-                self._rm_bar_frame = bar
-                self._rm_bar_val = val
-            elif name == "DC":
-                self._dc_bar_frame = bar
-                self._dc_bar_val = val
+            setattr(self, attr_val, val)
         top_layout.addLayout(cap_col, stretch=1)
         top_body.addLayout(top_layout)
         outer.addWidget(top_card, stretch=2)
-        cell_card, cell_body = _card("\u7535\u82af\u7535\u538b")
-        self._cell_rows = []
-        for i in range(1, 5):
-            row = QHBoxLayout()
-            row.setSpacing(4)
-            name_lbl = _make_label(f"Cell {i}", 9, TEXT_LABEL)
-            name_lbl.setFixedWidth(34)
-            row.addWidget(name_lbl)
-            bar = QFrame()
-            bar.setFixedHeight(10)
-            bar.setStyleSheet("background: #1a2a3a; border-radius: 3px;")
-            row.addWidget(bar, stretch=1)
-            val_lbl = _make_label("-- mV", 9, TEXT_VALUE, True)
-            val_lbl.setFixedWidth(52)
-            val_lbl.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            row.addWidget(val_lbl)
-            self._cell_rows.append((bar, val_lbl))
-            cell_body.addLayout(row)
-        self._vdiff_lbl = _make_label("\u538b\u5dee: -- mV", 9, TEXT_LABEL)
-        cell_body.addWidget(self._vdiff_lbl)
-        outer.addWidget(cell_card, stretch=2)
+        # --- Middle: Voltage details (real data, replaces fake cell voltages) ---
+        volt_card, volt_body = _card("\u7535\u538b\u8be6\u60c5")
+        self._volt_bar = GradientBar(height=12)
+        self._volt_bar_val = _make_label("-- mV", FONT_SM, TEXT_VALUE, True)
+        self._volt_bar_val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        v_row1 = QHBoxLayout()
+        v_row1.setSpacing(4)
+        v_row1.addWidget(_make_label("\u5f53\u524d\u7535\u538b", FONT_XS, TEXT_LABEL))
+        v_row1.addWidget(self._volt_bar, stretch=1)
+        v_row1.addWidget(self._volt_bar_val)
+        volt_body.addLayout(v_row1)
+        self._dv_lbl = _make_label("\u8bbe\u8ba1\u7535\u538b: -- mV", FONT_XS, TEXT_SECONDARY)
+        self._vmin_lbl = _make_label("\u6700\u4f4e\u7535\u538b: -- mV", FONT_XS, TEXT_SECONDARY)
+        self._vmax_lbl = _make_label("\u6700\u9ad8\u7535\u538b: -- mV", FONT_XS, TEXT_SECONDARY)
+        volt_body.addWidget(self._dv_lbl)
+        volt_body.addWidget(self._vmin_lbl)
+        volt_body.addWidget(self._vmax_lbl)
+        outer.addWidget(volt_card, stretch=2)
+        # --- Bottom: Power limits & session stats ---
         bottom_card, bottom_body = _card("\u529f\u7387\u9650\u5236 & \u4f1a\u8bdd")
         bot_layout = QHBoxLayout()
         bot_layout.setSpacing(8)
@@ -297,20 +279,20 @@ class MainWindow(QMainWindow):
         ]:
             row = QHBoxLayout()
             row.setSpacing(4)
-            lbl = _make_label(name, 9, TEXT_LABEL)
+            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
             lbl.setFixedWidth(28)
             row.addWidget(lbl)
-            val = _make_label("-- W", 10, TEXT_VALUE, True)
+            val = _make_label("-- W", FONT_BASE, TEXT_VALUE, True)
             row.addWidget(val)
             row.addStretch()
-            sub = _make_label(desc, 8, TEXT_SECONDARY)
+            sub = _make_label(desc, FONT_XS, TEXT_SECONDARY)
             pl_col.addLayout(row)
             pl_col.addWidget(sub)
             self._pl_rows[name] = val
         bot_layout.addLayout(pl_col)
         sep_v = QFrame()
         sep_v.setFrameShape(QFrame.VLine)
-        sep_v.setStyleSheet("background-color: #2a3f55; max-width: 1px;")
+        sep_v.setStyleSheet(f"background-color: {BORDER_SUBTLE}; max-width: 1px;")
         bot_layout.addWidget(sep_v)
         sess_col = QVBoxLayout()
         sess_col.setSpacing(3)
@@ -318,10 +300,10 @@ class MainWindow(QMainWindow):
         for name in ["\u91c7\u6837\u6b21\u6570", "\u5e73\u5747\u7535\u538b", "\u5e73\u5747\u7535\u6d41", "\u5e73\u5747\u6e29\u5ea6", "\u5e73\u5747\u529f\u7387"]:
             row = QHBoxLayout()
             row.setSpacing(4)
-            lbl = _make_label(name, 9, TEXT_LABEL)
+            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
             row.addWidget(lbl)
             row.addStretch()
-            val = _make_label("--", 9, TEXT_VALUE, True)
+            val = _make_label("--", FONT_XS, TEXT_VALUE, True)
             row.addWidget(val)
             sess_col.addLayout(row)
             self._sess_labels[name] = val
@@ -334,56 +316,63 @@ class MainWindow(QMainWindow):
         outer = QVBoxLayout()
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(4)
-        stats_card, stats_body = _card("\u91c7\u6837\u7edf\u8ba1")
-        self._sess_labels_right = {}
-        for name in ["\u91c7\u6837\u6b21\u6570", "\u5e73\u5747\u7535\u538b", "\u5e73\u5747\u7535\u6d41", "\u5e73\u5747\u6e29\u5ea6", "\u5e73\u5747\u529f\u7387"]:
+        # --- Capacity details (replaces duplicate session stats) ---
+        cap_card, cap_body = _card("\u5bb9\u91cf\u8be6\u60c5")
+        self._cap_labels = {}
+        for name in ["FCC", "RM", "DC", "\u5065\u5eb7\u5ea6"]:
             row = QHBoxLayout()
             row.setSpacing(4)
-            lbl = _make_label(name, 9, TEXT_LABEL)
+            lbl = _make_label(name, FONT_XS, TEXT_LABEL)
             row.addWidget(lbl)
             row.addStretch()
-            val = _make_label("--", 9, TEXT_VALUE, True)
+            val = _make_label("--", FONT_SM, TEXT_VALUE, True)
             row.addWidget(val)
-            stats_body.addLayout(row)
-            self._sess_labels_right[name] = val
-        outer.addWidget(stats_card, stretch=2)
-        self._life_widget = LifePredictionWidget()
-        life_card, life_body = _card()
-        life_body.addWidget(self._life_widget)
-        outer.addWidget(life_card, stretch=2)
+            cap_body.addLayout(row)
+            self._cap_labels[name] = val
+        outer.addWidget(cap_card, stretch=2)
+        # --- Health assessment (replaces duplicate life prediction) ---
+        health_card, health_body = _card("\u5065\u5eb7\u8bc4\u4f30")
+        self._soh_val_lbl = _make_label("SOH: --%", FONT_SM, TEXT_VALUE, True)
+        health_body.addWidget(self._soh_val_lbl)
+        self._cycle_val_lbl = _make_label("\u5faa\u73af\u6b21\u6570: --", FONT_SM, TEXT_SECONDARY)
+        health_body.addWidget(self._cycle_val_lbl)
+        self._degrade_val_lbl = _make_label("\u8870\u51cf\u7387: --%", FONT_SM, TEXT_SECONDARY)
+        health_body.addWidget(self._degrade_val_lbl)
+        outer.addWidget(health_card, stretch=2)
+        # --- Charge mode ---
         mode_card, mode_body = _card("\u5145\u7535\u6a21\u5f0f")
         mode_layout = QHBoxLayout()
         mode_layout.setSpacing(6)
         self._fast_mode_card = QFrame()
         self._fast_mode_card.setStyleSheet(
-            "background: #0d2818; border: 1px solid #00e676; "
-            "border-radius: 4px; padding: 4px;"
+            f"background: #0d2818; border: 1px solid {STATUS_GOOD}; "
+            f"border-radius: 4px; padding: 4px;"
         )
         fast_inner = QVBoxLayout(self._fast_mode_card)
         fast_inner.setAlignment(Qt.AlignCenter)
-        fi = _make_label("\u26a1", 14, "#00e676", True)
+        fi = _make_label("\u26a1", FONT_LG, STATUS_GOOD, True)
         fi.setAlignment(Qt.AlignCenter)
         fast_inner.addWidget(fi)
-        self._fast_mode_label = _make_label("\u5feb\u5145", 10, "#00e676", True)
+        self._fast_mode_label = _make_label("\u5feb\u5145", FONT_SM, STATUS_GOOD, True)
         self._fast_mode_label.setAlignment(Qt.AlignCenter)
         fast_inner.addWidget(self._fast_mode_label)
-        self._fast_mode_state = _make_label("OFF", 9, "#5a6a7a", True)
+        self._fast_mode_state = _make_label("OFF", FONT_XS, "#5a6a7a", True)
         self._fast_mode_state.setAlignment(Qt.AlignCenter)
         fast_inner.addWidget(self._fast_mode_state)
         self._night_mode_card = QFrame()
         self._night_mode_card.setStyleSheet(
-            "background: #1a2a3a; border: 1px solid #2a3f55; "
-            "border-radius: 4px; padding: 4px;"
+            f"background: {BAR_BG}; border: 1px solid {BORDER_SUBTLE}; "
+            f"border-radius: 4px; padding: 4px;"
         )
         night_inner = QVBoxLayout(self._night_mode_card)
         night_inner.setAlignment(Qt.AlignCenter)
-        ni = _make_label("\U0001f319", 14, "#7a8fa3", True)
+        ni = _make_label("\U0001f319", FONT_LG, "#7a8fa3", True)
         ni.setAlignment(Qt.AlignCenter)
         night_inner.addWidget(ni)
-        self._night_mode_label = _make_label("\u591c\u5145", 10, "#7a8fa3", True)
+        self._night_mode_label = _make_label("\u591c\u5145", FONT_SM, "#7a8fa3", True)
         self._night_mode_label.setAlignment(Qt.AlignCenter)
         night_inner.addWidget(self._night_mode_label)
-        self._night_mode_state = _make_label("OFF", 9, "#5a6a7a", True)
+        self._night_mode_state = _make_label("OFF", FONT_XS, "#5a6a7a", True)
         self._night_mode_state.setAlignment(Qt.AlignCenter)
         night_inner.addWidget(self._night_mode_state)
         mode_layout.addWidget(self._fast_mode_card)
@@ -402,9 +391,9 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(4, 0, 4, 0)
         layout.setSpacing(12)
         layout.addStretch()
-        self._runtime_lbl = _make_label("\u8fd0\u884c: 00:00:00", 10, TEXT_SECONDARY)
+        self._runtime_lbl = _make_label("\u8fd0\u884c: 00:00:00", FONT_BASE, TEXT_SECONDARY)
         layout.addWidget(self._runtime_lbl)
-        self._timestamp_lbl = _make_label("--:--:--", 10, TEXT_SECONDARY)
+        self._timestamp_lbl = _make_label("--:--:--", FONT_BASE, TEXT_SECONDARY)
         layout.addWidget(self._timestamp_lbl)
         return layout
 
@@ -445,9 +434,10 @@ class MainWindow(QMainWindow):
         self._update_status_badges(snapshot)
         self._update_battery_icon(snapshot)
         self._update_capacity_bars(snapshot)
-        self._update_cell_bars(snapshot)
+        self._update_voltage_details(snapshot)
         self._update_power_limits(snapshot)
-        self._update_life_widget(snapshot)
+        self._update_capacity_details(snapshot)
+        self._update_health(snapshot)
         if self._chart_window is not None and self._chart_window.isVisible():
             self._chart_window.on_snapshot(snapshot)
         self._timestamp_lbl.setText(snapshot.timestamp.strftime('%H:%M:%S'))
@@ -469,9 +459,7 @@ class MainWindow(QMainWindow):
         }
         for key, val in updates.items():
             if key in self._sess_labels:
-                self._sess_labels[key].setText(val)
-            if key in self._sess_labels_right:
-                self._sess_labels_right[key].setText(val)
+                self._sess_labels[key].setText(str(val))
         self._runtime_lbl.setText(f"\u8fd0\u884c: {stats.get('runtime', '00:00:00')}")
 
     @Slot(bool, bool)
@@ -504,90 +492,95 @@ class MainWindow(QMainWindow):
 
     def _update_capacity_bars(self, s):
         fcc_pct, rm_pct = self._view_model.calculate_capacity_percentages(s)
-        if self._fcc_bar_frame:
-            _update_bar(self._fcc_bar_frame, fcc_pct, "#00e5c8")
-        if self._fcc_bar_val:
-            self._fcc_bar_val.setText(f"{fcc_pct:.1f}%")
-        if self._rm_bar_frame:
-            _update_bar(self._rm_bar_frame, rm_pct, "#448aff")
-        if self._rm_bar_val:
-            self._rm_bar_val.setText(f"{rm_pct:.1f}%")
-        if self._dc_bar_frame:
-            _update_bar(self._dc_bar_frame, 100.0, "#00e676")
-        if self._dc_bar_val:
-            self._dc_bar_val.setText("100%")
+        self._fcc_bar.setValue(fcc_pct, "#00e5c8")
+        self._fcc_bar_val.setText(f"{fcc_pct:.1f}%")
+        self._rm_bar.setValue(rm_pct, "#448aff")
+        self._rm_bar_val.setText(f"{rm_pct:.1f}%")
+        self._dc_bar.setValue(100.0, "#00e676")
+        self._dc_bar_val.setText("100%")
 
-    def _update_cell_bars(self, s):
-        base_v = s.voltage / 4
-        vals = []
-        for i in range(4):
-            cell_v = base_v + _random.uniform(-200, 200)
-            cell_v = max(0, min(5000, cell_v))
-            vals.append(cell_v)
-            bar, lbl = self._cell_rows[i]
-            pct = cell_v / 4200 * 100
-            color = "#ff5252" if cell_v > 4350 else ("#ffab40" if cell_v < 3000 else "#00e5c8")
-            _update_bar(bar, pct, color)
-            lbl.setText(f"{cell_v:.0f} mV")
-        vdiff = max(vals) - min(vals)
-        diff_color = "#ff5252" if vdiff > 200 else ("#ffab40" if vdiff > 100 else TEXT_LABEL)
-        if self._vdiff_lbl is not None:
-            self._vdiff_lbl.setText(f"\u538b\u5dee: {vdiff:.0f} mV")
-            self._vdiff_lbl.setStyleSheet(
-                f"color: {diff_color}; font-size: 9px; "
-                f"border: none; background: transparent;"
-            )
+    def _update_voltage_details(self, s):
+        """Update voltage display with real data from snapshot."""
+        dv = s.dv if s.dv > 0 else 1
+        volt_pct = min(100.0, s.voltage / dv * 100)
+        volt_color = "#ff5252" if s.voltage > dv * 1.05 else ("#ffab40" if s.voltage < dv * 0.9 else "#00e5c8")
+        self._volt_bar.setValue(volt_pct, volt_color)
+        self._volt_bar_val.setText(f"{s.voltage} mV")
+        self._dv_lbl.setText(f"\u8bbe\u8ba1\u7535\u538b: {s.dv} mV")
+        self._vmin_lbl.setText(f"\u6700\u4f4e\u7535\u538b: {s.min_voltage} mV" if s.min_voltage else "\u6700\u4f4e\u7535\u538b: -- mV")
+        self._vmax_lbl.setText(f"\u6700\u9ad8\u7535\u538b: {s.max_voltage} mV" if s.max_voltage else "\u6700\u9ad8\u7535\u538b: -- mV")
 
     def _update_power_limits(self, s):
         for name, val in [("PL1", s.pl1), ("PL2", s.pl2), ("PL4", s.pl4)]:
             if name in self._pl_rows:
                 self._pl_rows[name].setText(f"{val} W")
 
-    def _update_life_widget(self, s):
-        self._life_widget.setValue(s.predicted_life_months)
+    def _update_capacity_details(self, s):
+        """Update capacity details card with real mAh values."""
+        if "FCC" in self._cap_labels:
+            self._cap_labels["FCC"].setText(f"{s.fcc} mAh")
+        if "RM" in self._cap_labels:
+            self._cap_labels["RM"].setText(f"{s.rm} mAh")
+        if "DC" in self._cap_labels:
+            self._cap_labels["DC"].setText(f"{s.dc} mAh")
+        if "\u5065\u5eb7\u5ea6" in self._cap_labels:
+            health = s.fcc / s.dc * 100 if s.dc > 0 else 0
+            self._cap_labels["\u5065\u5eb7\u5ea6"].setText(f"{health:.1f}%")
+
+    def _update_health(self, s):
+        """Update health assessment card."""
+        self._soh_val_lbl.setText(f"SOH: {s.soh}%")
+        self._cycle_val_lbl.setText(f"\u5faa\u73af\u6b21\u6570: {s.cycle_count}")
+        degrade = (1 - s.fcc / s.dc) * 100 if s.dc > 0 else 0
+        degrade_color = "#ff5252" if degrade > 30 else ("#ffab40" if degrade > 15 else TEXT_SECONDARY)
+        self._degrade_val_lbl.setText(f"\u8870\u51cf\u7387: {degrade:.1f}%")
+        self._degrade_val_lbl.setStyleSheet(
+            f"color: {degrade_color}; font-size: {FONT_SM}px; "
+            f"border: none; background: transparent;"
+        )
 
     def _update_fast_mode_ui(self, is_fast: bool):
         if is_fast:
             self._fast_mode_card.setStyleSheet(
-                "background: #0d2818; border: 1px solid #00e676; "
-                "border-radius: 4px; padding: 4px;"
+                f"background: #0d2818; border: 1px solid {STATUS_GOOD}; "
+                f"border-radius: 4px; padding: 4px;"
             )
             self._fast_mode_state.setText("ON")
             self._fast_mode_state.setStyleSheet(
-                f"color: {STATUS_GOOD}; font-size: 9px; "
+                f"color: {STATUS_GOOD}; font-size: {FONT_XS}px; "
                 f"font-weight: bold; border: none; background: transparent;"
             )
         else:
             self._fast_mode_card.setStyleSheet(
-                "background: #1a2a3a; border: 1px solid #2a3f55; "
-                "border-radius: 4px; padding: 4px;"
+                f"background: {BAR_BG}; border: 1px solid {BORDER_SUBTLE}; "
+                f"border-radius: 4px; padding: 4px;"
             )
             self._fast_mode_state.setText("OFF")
             self._fast_mode_state.setStyleSheet(
-                "color: #5a6a7a; font-size: 9px; "
-                "font-weight: bold; border: none; background: transparent;"
+                f"color: #5a6a7a; font-size: {FONT_XS}px; "
+                f"font-weight: bold; border: none; background: transparent;"
             )
 
     def _update_night_mode_ui(self, is_night: bool):
         if is_night:
             self._night_mode_card.setStyleSheet(
-                "background: #0d1a2e; border: 1px solid #448aff; "
-                "border-radius: 4px; padding: 4px;"
+                f"background: #0d1a2e; border: 1px solid #448aff; "
+                f"border-radius: 4px; padding: 4px;"
             )
             self._night_mode_state.setText("ON")
             self._night_mode_state.setStyleSheet(
-                "color: #448aff; font-size: 9px; "
-                "font-weight: bold; border: none; background: transparent;"
+                f"color: #448aff; font-size: {FONT_XS}px; "
+                f"font-weight: bold; border: none; background: transparent;"
             )
         else:
             self._night_mode_card.setStyleSheet(
-                "background: #1a2a3a; border: 1px solid #2a3f55; "
-                "border-radius: 4px; padding: 4px;"
+                f"background: {BAR_BG}; border: 1px solid {BORDER_SUBTLE}; "
+                f"border-radius: 4px; padding: 4px;"
             )
             self._night_mode_state.setText("OFF")
             self._night_mode_state.setStyleSheet(
-                "color: #5a6a7a; font-size: 9px; "
-                "font-weight: bold; border: none; background: transparent;"
+                f"color: #5a6a7a; font-size: {FONT_XS}px; "
+                f"font-weight: bold; border: none; background: transparent;"
             )
 
     def _open_chart_window(self):

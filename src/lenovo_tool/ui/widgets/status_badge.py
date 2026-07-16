@@ -1,7 +1,10 @@
 """Status badge / indicator with icon, label, and colored background."""
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel
+
+from lenovo_tool.ui.styles.main_style import (
+    TEXT_LABEL, TEXT_PRIMARY, FONT_SM, FONT_BASE,
+)
 
 
 class StatusBadge(QWidget):
@@ -12,7 +15,7 @@ class StatusBadge(QWidget):
 
     def __init__(
         self,
-        icon: str = "●",
+        icon: str = "\u25cf",
         label: str = "",
         parent: QWidget | None = None,
     ) -> None:
@@ -24,19 +27,19 @@ class StatusBadge(QWidget):
         self._icon_lbl = QLabel(icon)
         self._icon_lbl.setFixedWidth(14)
         self._icon_lbl.setStyleSheet(
-            "font-size: 10px; border: none; background: transparent;"
+            f"font-size: {FONT_SM}px; border: none; background: transparent;"
         )
 
         self._label_lbl = QLabel(label)
         self._label_lbl.setStyleSheet(
-            f"color: #7a8fa3; font-size: 10px; border: none; "
-            f"background: transparent;"
+            f"color: {TEXT_LABEL}; font-size: {FONT_SM}px; "
+            f"border: none; background: transparent;"
         )
 
         self._value_lbl = QLabel("--")
         self._value_lbl.setStyleSheet(
-            f"color: #e0e8f0; font-size: 12px; font-weight: bold; "
-            f"border: none; background: transparent;"
+            f"color: {TEXT_PRIMARY}; font-size: {FONT_BASE}px; "
+            f"font-weight: bold; border: none; background: transparent;"
         )
 
         layout.addWidget(self._icon_lbl)
@@ -44,16 +47,16 @@ class StatusBadge(QWidget):
         layout.addStretch()
         layout.addWidget(self._value_lbl)
 
-    def set_value(self, text: str, color: str = "#e0e8f0") -> None:
+    def set_value(self, text: str, color: str = TEXT_PRIMARY) -> None:
         self._value_lbl.setText(text)
         self._value_lbl.setStyleSheet(
-            f"color: {color}; font-size: 12px; font-weight: bold; "
+            f"color: {color}; font-size: {FONT_BASE}px; font-weight: bold; "
             f"border: none; background: transparent;"
         )
 
-    def set_icon(self, icon: str, color: str = "#e0e8f0") -> None:
+    def set_icon(self, icon: str, color: str = TEXT_PRIMARY) -> None:
         self._icon_lbl.setText(icon)
         self._icon_lbl.setStyleSheet(
-            f"color: {color}; font-size: 10px; "
+            f"color: {color}; font-size: {FONT_SM}px; "
             f"border: none; background: transparent;"
         )

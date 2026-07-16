@@ -3,7 +3,8 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QProgressBar, QLabel
 
 from lenovo_tool.ui.styles.main_style import (
-    STATUS_GOOD, STATUS_WARN, STATUS_BAD, TEXT_LABEL,
+    BAR_BG, BORDER_SUBTLE,
+    STATUS_GOOD, STATUS_WARN, STATUS_BAD,
 )
 
 
@@ -50,7 +51,6 @@ class BatteryDataPanel(QWidget):
             ("RSOC", 100),
             ("SOH", 100),
         ]:
-            # Row: label left, value right
             header = QHBoxLayout()
             label = QLabel(name)
             label.setObjectName("FieldLabel")
@@ -68,8 +68,8 @@ class BatteryDataPanel(QWidget):
             bar.setTextVisible(False)
             bar.setStyleSheet(f"""
                 QProgressBar {{
-                    background-color: #1a2a3a;
-                    border: 1px solid #2a3f55;
+                    background-color: {BAR_BG};
+                    border: 1px solid {BORDER_SUBTLE};
                     border-radius: 4px;
                     min-height: 10px;
                     max-height: 10px;
@@ -98,8 +98,8 @@ class BatteryDataPanel(QWidget):
         color = _bar_color(name, float(value))
         self._bars[name].setStyleSheet(f"""
             QProgressBar {{
-                background-color: #1a2a3a;
-                border: 1px solid #2a3f55;
+                background-color: {BAR_BG};
+                border: 1px solid {BORDER_SUBTLE};
                 border-radius: 4px;
                 min-height: 10px;
                 max-height: 10px;
