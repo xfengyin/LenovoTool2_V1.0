@@ -7,6 +7,8 @@ import random
 import threading
 import time
 
+from lenovo_tool.core.data_models import CellVoltage
+
 
 class DemoDLLInterface:
     """Mock DLL with realistic battery simulation.
@@ -22,6 +24,7 @@ class DemoDLLInterface:
         self._rsoc = random.randint(60, 95)
         self._rsoc_dir = -1
         self._cycle_count = random.randint(50, 200)
+        self._tick = 0
 
     def read_int_word(self, addr: int) -> int:
         return self._mock_value(addr)
@@ -86,6 +89,21 @@ class DemoDLLInterface:
         if random.random() < 0.05:
             self._cycle_count += 1
 
+        # 模拟 4 芯电压（围绕基础值波动，4125-4175 范围）
+        self._tick += 1
+        base = 4150 + (self._tick % 50) - 25
+        cell_voltages = CellVoltage(
+            cell1=base + 0,
+            cell2=base + 2,
+            cell3=base - 3,
+            cell4=base + 1,
+        )
+
+        # 模拟 FET 温度（比电池温度高 3~8℃），与 chart_window 联动
+        fet_temperature = round(
+            temperature + random.uniform(3.0, 8.0), 1
+        )
+
         return {
             "voltage": voltage,
             "current": current,
@@ -102,6 +120,8 @@ class DemoDLLInterface:
             "pl4": self.read_neg_word(0x62),
             "life_raw": self.read_int_word(0x6A),
             "cycle_count": self._cycle_count,
+            "cell_voltages": cell_voltages,
+            "fet_temperature": fet_temperature,
         }
 
     @staticmethod

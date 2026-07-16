@@ -56,6 +56,7 @@ def mock_dll() -> MagicMock:
         "pl2": 65,
         "pl4": 90,
         "life_raw": 1792,
+        "cycle_count": 123,
     }
 
     return mock

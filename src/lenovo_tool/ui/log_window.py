@@ -363,9 +363,13 @@ class LogWindow(QDialog):
         interval_text = (
             self._interval_combo.currentText()
         )
-        interval_sec = self.INTERVAL_MAP.get(
-            interval_text, 1.0
-        )
+        # 优先使用 UI 选择；缺省回退到配置（settings.yaml 中的
+        # polling.log_scan_interval_ms）转换为秒
+        interval_sec = self.INTERVAL_MAP.get(interval_text)
+        if interval_sec is None:
+            interval_sec = max(
+                0.1, self._config.log_scan_interval_ms / 1000.0
+            )
 
         self._log_worker = LogWorker(
             self._log_service, interval_sec
@@ -407,11 +411,11 @@ class LogWindow(QDialog):
             f"— {len(snapshot.values)} 寄存器"
         )
         if self._csv_service:
-            row = {
-                "time": datetime.now().strftime(
+            row: dict[str, object] = {}
+            if self._config.csv_include_timestamp:
+                row["time"] = datetime.now().strftime(
                     "%Y-%m-%d %H:%M:%S"
                 )
-            }
             row.update(snapshot.values)
             self._csv_service.write_row(row)
 

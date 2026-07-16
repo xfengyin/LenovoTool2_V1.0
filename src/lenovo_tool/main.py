@@ -101,7 +101,18 @@ def main() -> int:
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName(config.window_title)
 
-    window = MainWindow(container.data_source, config)
+    # 创建历史仓库（仅在启用时）
+    history_repo = None
+    if getattr(config, "history_enabled", True):
+        from lenovo_tool.services.history_repository import HistoryRepository
+
+        history_repo = HistoryRepository(
+            db_path=config.history_db_path,
+            buffer_size=config.history_buffer_size,
+        )
+        logger.info("历史数据仓库已初始化: %s", config.history_db_path)
+
+    window = MainWindow(container.data_source, config, history_repo=history_repo)
     window.setWindowTitle(
         f"{config.window_title} [DEMO]"
         if is_demo

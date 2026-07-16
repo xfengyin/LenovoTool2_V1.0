@@ -18,7 +18,7 @@ charts:
 gauge:
   min_value: 0
   max_value: 36
-  title: "预计可用≥               月"
+  title: "预计可用寿命（月）"
 
 logging:
   level: "INFO"
@@ -39,3 +39,10 @@ dll:
 thresholds:
   temperature_warning: 60.0
   soh_warning: 20
+
+# 历史数据持久化
+history:
+  enabled: true             # 是否启用历史数据存储
+  db_path: "data/battery_history.db"  # SQLite 数据库文件路径
+  retention_days: 30        # 数据保留天数（超过此天数的记录将被清理）
+  buffer_size: 100          # 内存缓冲大小，达到后批量落盘

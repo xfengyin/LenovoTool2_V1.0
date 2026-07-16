@@ -8,6 +8,7 @@ All DLL calls are:
 Implements BatteryDataSource interface for DI compatibility.
 """
 
+import logging
 import threading
 import time
 from ctypes import CDLL, c_char, c_int, c_short, pointer
@@ -16,6 +17,10 @@ from typing import Dict
 from lenovo_tool.core.interfaces import BatteryDataSource
 from lenovo_tool.core.dll_loader import DLLPaths
 from lenovo_tool.core.exceptions import DLLCommunicationError, SMBusError
+from lenovo_tool.core.register_definitions import WordRegister
+from lenovo_tool.services.life_prediction import predict_life_months
+
+logger = logging.getLogger(__name__)
 
 
 class DLLInterface(BatteryDataSource):
@@ -186,23 +191,14 @@ class DLLInterface(BatteryDataSource):
         day = raw - (year - 1980) * 512 - month * 32
         return f"{year}-{month}-{day}"
 
-    def life_prediction(self, addr: int = 0x6A) -> int:
+    def life_prediction(self, addr: int = WordRegister.BATTERY_HEALTH_STATE.value) -> int:
         """Predict remaining battery life in months from register 0x6A.
 
-        Uses the same thresholds as
-        :func:`lenovo_tool.services.life_prediction.predict_life_months`.
+        委托给 :func:`lenovo_tool.services.life_prediction.predict_life_months`
+        以保证算法实现唯一。
         """
         raw = self.read_int_word(addr)
-        if raw >= 1792:
-            return 36
-        elif raw >= 1536:
-            return 24
-        elif raw >= 1280:
-            return 12
-        elif raw >= 1024:
-            return 6
-        else:
-            return 0
+        return predict_life_months(raw)
 
     def read_soh(self) -> int:
         """Calculate State of Health from FCC / Design Capacity."""
@@ -219,23 +215,46 @@ class DLLInterface(BatteryDataSource):
         """Read all main data registers under a single lock.
 
         Returns a dict with keys: voltage, current, temperature, rsoc, soh,
-        fcc, rm, dc, dv, battery_mode, pl1, pl2, pl4, life_raw.
+        fcc, rm, dc, dv, battery_mode, pl1, pl2, pl4, life_raw,
+        cycle_count, cell_voltages.
         """
         with self._lock:
-            voltage = self.read_int_word(0x09)
-            current = self.read_neg_word(0x0A)
-            temperature = self.get_temperature(0x08)
-            rsoc = self.read_int_word(0x0D)
+            voltage = self.read_int_word(WordRegister.VOLTAGE.value)
+            current = self.read_neg_word(WordRegister.CURRENT.value)
+            temperature = self.get_temperature(WordRegister.TEMPERATURE.value)
+            rsoc = self.read_int_word(WordRegister.RSOC.value)
             soh = self.read_soh()
-            fcc = self.read_int_word(0x10)
-            rm = self.read_int_word(0x0F)
-            dc = self.read_int_word(0x18)
-            dv = self.read_int_word(0x19)
-            battery_mode = self.read_int_word(0x03)
-            pl1 = self.read_neg_word(0x60)
-            pl2 = self.read_neg_word(0x61)
-            pl4 = self.read_neg_word(0x62)
-            life_raw = self.read_int_word(0x6A)
+            fcc = self.read_int_word(WordRegister.FULL_CHARGE_CAPACITY.value)
+            rm = self.read_int_word(WordRegister.REMAINING_CAPACITY.value)
+            dc = self.read_int_word(WordRegister.DESIGN_CAPACITY.value)
+            dv = self.read_int_word(WordRegister.DESIGN_VOLTAGE.value)
+            battery_mode = self.read_int_word(WordRegister.BATTERY_MODE.value)
+            pl1 = self.read_neg_word(WordRegister.PL1.value)
+            pl2 = self.read_neg_word(WordRegister.PL2.value)
+            pl4 = self.read_neg_word(WordRegister.PL4.value)
+            life_raw = self.read_int_word(
+                WordRegister.BATTERY_HEALTH_STATE.value
+            )
+            # 0x17 CycleCount — 真实硬件下循环次数，缺失会导致恒为 0
+            cycle_count = self.read_int_word(WordRegister.CYCLE_COUNT.value)
+
+        # Cell voltage block (0x23) - 4 芯 × 2 字节 big-endian
+        # 优先使用 read_smbus 读取块字节；旧式 read_block 只返回 int
+        cell_voltages: object = None
+        try:
+            block_data = self.read_smbus(0, 0x23, 8, 0x16)
+            from lenovo_tool.core.data_models import CellVoltage
+            if block_data and len(block_data) >= 8:
+                c1 = (int(block_data["byte0"], 16) << 8) | int(block_data["byte1"], 16)
+                c2 = (int(block_data["byte2"], 16) << 8) | int(block_data["byte3"], 16)
+                c3 = (int(block_data["byte4"], 16) << 8) | int(block_data["byte5"], 16)
+                c4 = (int(block_data["byte6"], 16) << 8) | int(block_data["byte7"], 16)
+                cell_voltages = CellVoltage(c1, c2, c3, c4)
+            else:
+                cell_voltages = None
+        except Exception as e:
+            logger.debug("Cell voltage read failed: %s", e)
+            cell_voltages = None
 
         return {
             "voltage": voltage,
@@ -252,4 +271,6 @@ class DLLInterface(BatteryDataSource):
             "pl2": pl2,
             "pl4": pl4,
             "life_raw": life_raw,
+            "cycle_count": cycle_count,
+            "cell_voltages": cell_voltages,
         }

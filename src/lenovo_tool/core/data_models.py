@@ -6,6 +6,45 @@ from typing import ClassVar, Dict
 
 
 @dataclass(frozen=True, slots=True)
+class CellVoltage:
+    """4 芯电池电芯电压（mV）"""
+    cell1: int
+    cell2: int
+    cell3: int
+    cell4: int
+
+    @property
+    def spread(self) -> int:
+        """最大压差（mV）"""
+        return max(self.cell1, self.cell2, self.cell3, self.cell4) - \
+               min(self.cell1, self.cell2, self.cell3, self.cell4)
+
+    @property
+    def min_cell(self) -> tuple[int, int]:
+        """返回 (index, value)，index 1-4"""
+        vals = [(i+1, v) for i, v in enumerate([self.cell1, self.cell2, self.cell3, self.cell4])]
+        return min(vals, key=lambda x: x[1])
+
+    @property
+    def max_cell(self) -> tuple[int, int]:
+        vals = [(i+1, v) for i, v in enumerate([self.cell1, self.cell2, self.cell3, self.cell4])]
+        return max(vals, key=lambda x: x[1])
+
+    @property
+    def is_balanced(self) -> bool:
+        return self.spread < 30
+
+    @property
+    def status(self) -> str:
+        """均衡状态: 'normal' / 'warning' / 'critical'"""
+        if self.spread < 30:
+            return "normal"
+        elif self.spread < 100:
+            return "warning"
+        return "critical"
+
+
+@dataclass(frozen=True, slots=True)
 class BatterySnapshot:
     """A single complete battery reading at a point in time.
 
@@ -33,6 +72,26 @@ class BatterySnapshot:
     max_temperature: float = 0.0   # Session peak temperature
     min_voltage: int = 0           # Session low voltage
     max_voltage: int = 0           # Session high voltage
+    cell_voltages: CellVoltage | None = None  # 4 芯电芯电压（mV），可空
+    fet_temperature: float | None = None      # FET 温度（℃, 0x3B），可空
+
+
+@dataclass(frozen=True, slots=True)
+class AlertEvent:
+    """告警事件。
+
+    由 ``AlertEngine`` 在规则命中/恢复时生成，向 UI / 日志 / 声音通道分发。
+    不可变：可在线程间安全共享，事件恢复通过创建 ``recovered=True`` 的新事件表达。
+    """
+
+    alert_id: str           # ALM-01 ~ ALM-10
+    level: str              # "critical" | "warning"
+    message: str            # 告警描述
+    current_value: float    # 当前值
+    threshold: float        # 阈值
+    timestamp: datetime = field(default_factory=datetime.now)
+    recovered: bool = False
+    recovery_time: datetime | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,9 +120,11 @@ class AppConfig:
     """Application configuration with sensible defaults."""
 
     poll_interval_ms: int = 4000
+    log_scan_interval_ms: int = 1000
     chart_history_seconds: int = 60
     csv_delimiter: str = ","
     csv_encoding: str = "utf-8"
+    csv_include_timestamp: bool = True
     log_level: str = "INFO"
     log_format: str = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
     log_file: str | None = None
@@ -81,6 +142,11 @@ class AppConfig:
     gauge_min: int = 0
     gauge_max: int = 36
     gauge_title: str = "预计可用寿命（月）"
+    # History persistence
+    history_enabled: bool = True
+    history_db_path: str = "data/battery_history.db"
+    history_retention_days: int = 30
+    history_buffer_size: int = 100
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,3 +160,30 @@ class PerformanceMetrics:
     error_count: int = 0
     error_types: Dict[str, int] = field(default_factory=dict)
     uptime_seconds: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class CommMetrics:
+    """SMBus 通信质量指标：用于通信诊断面板。
+
+    与 PerformanceMetrics 区别：
+    - PerformanceMetrics 面向服务自检（聚合指标）
+    - CommMetrics 面向 UI 展示（连续成功/失败、在线状态等）
+    """
+
+    sample_count: int = 0
+    success_count: int = 0
+    error_count: int = 0
+    avg_delay_ms: float = 0.0
+    max_delay_ms: float = 0.0
+    min_delay_ms: float = 0.0
+    consecutive_success: int = 0
+    consecutive_failures: int = 0
+    is_online: bool = True
+
+    @property
+    def error_rate(self) -> float:
+        """错误率（百分比），无样本时返回 0。"""
+        if self.sample_count == 0:
+            return 0.0
+        return self.error_count / self.sample_count * 100

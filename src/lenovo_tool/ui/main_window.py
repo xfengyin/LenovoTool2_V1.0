@@ -17,8 +17,9 @@ from PySide6.QtWidgets import (
     QGridLayout, QFrame, QLabel, QPushButton, QStatusBar,
 )
 
-from lenovo_tool.core.data_models import AppConfig, BatterySnapshot
+from lenovo_tool.core.data_models import AppConfig, BatterySnapshot, CellVoltage, CommMetrics
 from lenovo_tool.core.dll_interface import DLLInterface
+from lenovo_tool.services.alert_engine import AlertEngine
 from lenovo_tool.ui.chart_window import ChartWindow
 from lenovo_tool.ui.dialogs.error_dialog import show_error
 from lenovo_tool.ui.styles.main_style import (
@@ -30,14 +31,17 @@ from lenovo_tool.ui.styles.main_style import (
     BG_PANEL_SOLID,
 )
 from lenovo_tool.ui.view_models.main_view_model import MainViewModel
+from lenovo_tool.ui.widgets.cell_voltage_panel import CellVoltagePanel
 from lenovo_tool.ui.widgets.half_gauge_widget import HalfGaugeWidget
 from lenovo_tool.ui.widgets.battery_icon_widget import BatteryIconWidget
+from lenovo_tool.ui.widgets.comm_diagnostics_panel import CommDiagnosticsPanel
 from lenovo_tool.ui.widgets.gradient_bar import GradientBar
 from lenovo_tool.ui.widgets.ring_indicator import RingIndicator
 from lenovo_tool.ui.widgets.panel_widget import PanelWidget
 from lenovo_tool.ui.widgets.kpi_card import KpiCard
 from lenovo_tool.ui.widgets.decorative_title_bar import DecorativeTitleBar
 from lenovo_tool.ui.workers.data_worker import DataWorker
+from lenovo_tool.ui.workers.history_worker import HistoryWorker
 
 logger = logging.getLogger(__name__)
 
@@ -53,14 +57,27 @@ def _mk_label(text, size=FONT_SM, color=TEXT_LABEL, bold=False):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, dll: DLLInterface, config: AppConfig, parent=None):
+    def __init__(
+        self,
+        dll: DLLInterface,
+        config: AppConfig,
+        history_repo: HistoryRepository | None = None,
+        parent=None,
+    ):
         super().__init__(parent)
         self._dll = dll
         self._config = config
         self._view_model = MainViewModel(dll, config)
+        # 实时告警引擎：每帧快照评估，命中即推送 Signal
+        self._alert_engine = AlertEngine(parent=self)
         self._worker = None
         self._chart_window = None
         self._log_window = None
+        self._history_window = None
+        # 历史数据持久化（可选注入，未启用时为 None）
+        self._history_repo = history_repo
+        self._history_worker: HistoryWorker | None = None
+        self._session_id: str = ""
         self._init_ui()
         self._set_fixed_size()
         self.setStyleSheet(global_stylesheet())
@@ -90,6 +107,9 @@ class MainWindow(QMainWindow):
     def _setup_event_bindings(self):
         self._view_model.session_stats_updated.connect(self._on_session_stats_updated)
         self._view_model.charge_mode_updated.connect(self._on_charge_mode_updated)
+        # 告警引擎信号 → UI 更新
+        self._alert_engine.alert_triggered.connect(self._on_alert_triggered)
+        self._alert_engine.active_alerts_changed.connect(self._on_active_alerts_changed)
 
     # ============== 顶部标题栏 ==============
     def _build_title_bar(self):
@@ -128,6 +148,13 @@ class MainWindow(QMainWindow):
         self._log_btn.setCursor(Qt.PointingHandCursor)
         self._log_btn.clicked.connect(self._open_log_window)
         layout.addWidget(self._log_btn)
+
+        self._history_btn = QPushButton("\U0001f4c8 \u5386\u53f2\u8d8b\u52bf")
+        self._history_btn.setCursor(Qt.PointingHandCursor)
+        # 当历史功能未启用时，禁用按钮
+        self._history_btn.setEnabled(self._history_repo is not None)
+        self._history_btn.clicked.connect(self._open_history_window)
+        layout.addWidget(self._history_btn)
 
         layout.addStretch()
 
@@ -292,6 +319,12 @@ class MainWindow(QMainWindow):
         col.setContentsMargins(0, 0, 0, 0)
         col.setSpacing(6)
 
+        # 电芯电压 - 4 芯独立条形图 + 压差分析
+        cell_panel = PanelWidget("\u7535\u82af\u7535\u538b")
+        self._cell_voltage_panel = CellVoltagePanel()
+        cell_panel.content_layout.addWidget(self._cell_voltage_panel)
+        col.addWidget(cell_panel, stretch=2)
+
         # 健康评估
         health_panel = PanelWidget("\u5065\u5eb7\u8bc4\u4f30")
         health_grid = QGridLayout()
@@ -345,6 +378,12 @@ class MainWindow(QMainWindow):
         mode_layout.addWidget(self._night_card)
         mode_panel.content_layout.addLayout(mode_layout)
         col.addWidget(mode_panel, stretch=1)
+
+        # 通信诊断
+        comm_panel = PanelWidget("\u901a\u4fe1\u8bca\u65ad")
+        self._comm_panel = CommDiagnosticsPanel()
+        comm_panel.content_layout.addWidget(self._comm_panel)
+        col.addWidget(comm_panel, stretch=2)
 
         # 会话统计
         sess_panel = PanelWidget("\u4f1a\u8bdd\u7edf\u8ba1")
@@ -416,8 +455,18 @@ class MainWindow(QMainWindow):
             parent=self,
         )
         self._worker.data_ready.connect(self._on_snapshot)
+        self._worker.comm_metrics_ready.connect(self._on_comm_metrics)
         self._worker.error_occurred.connect(self._on_error)
+        # 跨线程告警：DataWorker 检测到延迟/连续失败时，信号回到主线程触发 AlertEngine
+        self._worker.alert_external_trigger.connect(
+            self._alert_engine.trigger_external
+        )
+        self._worker.alert_external_recover.connect(
+            self._alert_engine.recover_external
+        )
         self._worker.start()
+        # 启动历史数据后台写入（仅在启用时）
+        self._start_history_worker()
         self._start_btn.setEnabled(False)
         self._stop_btn.setEnabled(True)
         self._status_bar.showMessage("\u76d1\u63a7\u8fd0\u884c\u4e2d...")
@@ -429,17 +478,73 @@ class MainWindow(QMainWindow):
             return
         self._worker.stop()
         self._worker.data_ready.disconnect(self._on_snapshot)
+        self._worker.comm_metrics_ready.disconnect(self._on_comm_metrics)
         self._worker.error_occurred.disconnect(self._on_error)
         self._worker = None
+        # 停止历史数据后台写入
+        self._stop_history_worker()
         self._start_btn.setEnabled(True)
         self._stop_btn.setEnabled(False)
         self._status_bar.showMessage("\u76d1\u63a7\u5df2\u505c\u6b62")
         self._title_bar.set_left_text("\u7cfb\u7edf\u72b6\u6001\uff1a\u5df2\u505c\u6b62")
         logger.info("监控已停止")
 
+    # ============== 历史数据 Worker ==============
+    def _start_history_worker(self) -> None:
+        """启动历史数据后台写入线程。"""
+        if not self._is_history_enabled():
+            return
+        if self._history_worker is not None:
+            return
+        # 生成 session_id：启动时间戳 + 短随机
+        from datetime import datetime as _dt
+        import uuid
+
+        self._session_id = (
+            f"{_dt.now():%Y%m%d_%H%M%S}_{uuid.uuid4().hex[:8]}"
+        )
+        self._history_worker = HistoryWorker(
+            repository=self._history_repo,
+            session_id=self._session_id,
+            parent=self,
+        )
+        self._history_worker.error_occurred.connect(
+            lambda msg: logger.error("HistoryWorker error: %s", msg)
+        )
+        self._history_worker.start()
+        logger.info(
+            "HistoryWorker 启动，session_id=%s", self._session_id
+        )
+
+    def _stop_history_worker(self) -> None:
+        """停止历史数据后台写入线程。"""
+        worker = self._history_worker
+        if worker is None:
+            return
+        try:
+            worker.stop()
+            # 设置较短等待，避免阻塞 UI
+            if not worker.wait(3000):
+                logger.warning("HistoryWorker 未能在 3s 内退出")
+        except Exception as e:
+            logger.warning("停止 HistoryWorker 异常: %s", e)
+        finally:
+            self._history_worker = None
+
+    def _is_history_enabled(self) -> bool:
+        """检查历史功能是否可用（仓库存在 + 配置启用）。"""
+        if self._history_repo is None:
+            return False
+        return bool(getattr(self._config, "history_enabled", True))
+
     @Slot(BatterySnapshot)
     def _on_snapshot(self, snapshot: BatterySnapshot):
         self._view_model.process_snapshot(snapshot)
+        # 实时告警评估（每帧一次）
+        self._alert_engine.evaluate(snapshot)
+        # 将数据投递到历史 Worker（非阻塞）
+        if self._history_worker is not None:
+            self._history_worker.enqueue(snapshot)
         self._update_gauge(snapshot)
         self._update_rings(snapshot)
         self._update_status_rows(snapshot)
@@ -449,16 +554,27 @@ class MainWindow(QMainWindow):
         self._update_voltage_details(snapshot)
         self._update_health(snapshot)
         self._update_power_limits(snapshot)
+        self._update_cell_voltages(snapshot)
         if self._chart_window is not None and self._chart_window.isVisible():
             self._chart_window.on_snapshot(snapshot)
         self._timestamp_lbl.setText(snapshot.timestamp.strftime('%H:%M:%S'))
         self._title_bar.set_right_text(f"\u65f6\u95f4\uff1a{snapshot.timestamp.strftime('%Y-%m-%d %H:%M:%S')}")
+        # 告警状态可能影响状态栏文本：交给 view_model 拼接
         self._status_bar.showMessage(self._view_model.get_status_bar_text(snapshot))
 
     @Slot(Exception)
     def _on_error(self, error):
         logger.error("\u6570\u636e\u91c7\u96c6\u9519\u8bef: %s", error)
         self._status_bar.showMessage(f"\u9519\u8bef: {error}")
+
+    @Slot(CommMetrics)
+    def _on_comm_metrics(self, comm: CommMetrics) -> None:
+        """刷新通信诊断面板。
+
+        与 ``_on_snapshot`` 解耦：成功/失败采样均会触发，便于实时反映掉线。
+        """
+        if self._comm_panel is not None:
+            self._comm_panel.set_data(comm)
 
     @Slot(dict)
     def _on_session_stats_updated(self, stats):
@@ -478,6 +594,52 @@ class MainWindow(QMainWindow):
     def _on_charge_mode_updated(self, is_fast: bool, is_night: bool):
         self._update_mode_card(self._fast_card, GLOW_GREEN, is_fast)
         self._update_mode_card(self._night_card, GLOW_BLUE, is_night)
+
+    # ============== 告警回调 ==============
+    @Slot(object)
+    def _on_alert_triggered(self, event) -> None:
+        """新告警触发：日志（已完成）+ 状态栏提示 + 可选声音。"""
+        level_tag = "CRIT" if event.level == "critical" else "WARN"
+        self._status_bar.showMessage(
+            f"[{level_tag}] {event.alert_id} {event.message} "
+            f"value={event.current_value:.2f} > threshold={event.threshold:.2f}"
+        )
+        # 声音通道：critical 级别才发声（避免告警风暴）
+        if self._alert_engine.is_sound_enabled() and event.level == "critical":
+            self._play_alert_sound()
+
+    @Slot(list)
+    def _on_active_alerts_changed(self, active_alerts) -> None:
+        """活动告警列表变更：刷新标题栏告警铃铛文字 + 颜色。"""
+        count = len(active_alerts)
+        if count == 0:
+            self._title_bar.set_left_text("\u7cfb\u7edf\u72b6\u6001\uff1a\u5728\u7ebf")
+            return
+        # 是否有 critical
+        has_crit = any(e.level == "critical" for e in active_alerts)
+        # 顶部状态条按 critical → 红色、warning → 橙色
+        if has_crit:
+            self._title_bar.set_left_text(
+                f"\u7cfb\u7edf\u72b6\u6001\uff1a\u26a0 \u4e25\u91cd\u544a\u8b66×{count}"
+            )
+        else:
+            self._title_bar.set_left_text(
+                f"\u7cfb\u7edf\u72b6\u6001\uff1a\u26a0 \u8b66\u544a×{count}"
+            )
+
+    def _play_alert_sound(self) -> None:
+        """播放告警音（critical 级别）。跨平台安全：无音频设备时静默失败。"""
+        try:
+            from PySide6.QtMultimedia import QSoundEffect
+            from PySide6.QtCore import QUrl
+            # 资源内嵌短促 beep：失败时静默
+            effect = QSoundEffect(self)
+            effect.setSource(QUrl.fromLocalFile(":/qml/beep.wav"))
+            effect.setVolume(0.6)
+            effect.play()
+        except Exception as e:
+            # 静默：声音通道不可用不应阻塞业务
+            logger.debug("播放告警音失败（已忽略）: %s", e)
 
     def _update_mode_card(self, card, color, active):
         bg = "rgba(0, 80, 60, 0.4)" if active else BG_PANEL_SOLID
@@ -566,6 +728,11 @@ class MainWindow(QMainWindow):
             if name in self._pl_rows:
                 self._pl_rows[name].setText(f"{val} W")
 
+    def _update_cell_voltages(self, s: BatterySnapshot) -> None:
+        """刷新电芯电压面板；snapshot.cell_voltages 为 None 时跳过。"""
+        cell: CellVoltage | None = s.cell_voltages
+        self._cell_voltage_panel.set_data(cell)
+
     # ============== 窗口操作 ==============
     def _open_chart_window(self):
         if self._chart_window is None:
@@ -581,6 +748,23 @@ class MainWindow(QMainWindow):
         self._log_window.show()
         self._log_window.raise_()
         self._log_window.activateWindow()
+
+    def _open_history_window(self):
+        """打开历史趋势查询窗口。"""
+        if self._history_repo is None:
+            QMessageBox.information(
+                self,
+                "历史功能未启用",
+                "请在 config/settings.yaml 中启用 history 配置。",
+            )
+            return
+        if self._history_window is None:
+            self._history_window = HistoryTrendWindow(
+                self._history_repo, parent=self
+            )
+        self._history_window.show()
+        self._history_window.raise_()
+        self._history_window.activateWindow()
 
     def _toggle_fast(self):
         try:
@@ -606,5 +790,7 @@ class MainWindow(QMainWindow):
             self._chart_window.close()
         if self._log_window is not None and self._log_window.isVisible():
             self._log_window.close()
+        if self._history_window is not None and self._history_window.isVisible():
+            self._history_window.close()
         logger.info("主窗口已关闭")
         super().closeEvent(event)

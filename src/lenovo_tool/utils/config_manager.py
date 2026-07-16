@@ -41,6 +41,7 @@ class ConfigManager:
         "app.window_height": "window_height",
         "app.window_fixed_size": "window_fixed_size",
         "polling.main_interval_ms": "poll_interval_ms",
+        "polling.log_scan_interval_ms": "log_scan_interval_ms",
         "charts.history_seconds": "chart_history_seconds",
         "charts.voltage_y_range": "voltage_y_range",
         "charts.current_y_range": "current_y_range",
@@ -48,6 +49,7 @@ class ConfigManager:
         "charts.rm_y_range": "rm_y_range",
         "csv.delimiter": "csv_delimiter",
         "csv.encoding": "csv_encoding",
+        "csv.include_timestamp": "csv_include_timestamp",
         "logging.level": "log_level",
         "logging.format": "log_format",
         "logging.file": "log_file",
@@ -57,6 +59,10 @@ class ConfigManager:
         "gauge.min_value": "gauge_min",
         "gauge.max_value": "gauge_max",
         "gauge.title": "gauge_title",
+        "history.enabled": "history_enabled",
+        "history.db_path": "history_db_path",
+        "history.retention_days": "history_retention_days",
+        "history.buffer_size": "history_buffer_size",
     }
 
     def get(self, key: str, default: Any = None) -> Any:
@@ -186,6 +192,7 @@ class ConfigManager:
         csv_cfg = data.get("csv", {})
         dll_cfg = data.get("dll", {})
         thresholds = data.get("thresholds", {})
+        history = data.get("history", {})
 
         return AppConfig(
             window_title=str(
@@ -199,11 +206,17 @@ class ConfigManager:
             poll_interval_ms=int(
                 polling.get("main_interval_ms", 4000)
             ),
+            log_scan_interval_ms=int(
+                polling.get("log_scan_interval_ms", 1000)
+            ),
             chart_history_seconds=int(
                 charts.get("history_seconds", 60)
             ),
             csv_delimiter=str(csv_cfg.get("delimiter", ",")),
             csv_encoding=str(csv_cfg.get("encoding", "utf-8")),
+            csv_include_timestamp=bool(
+                csv_cfg.get("include_timestamp", True)
+            ),
             log_level=str(logging_cfg.get("level", "INFO")),
             log_format=str(
                 logging_cfg.get(
@@ -240,5 +253,15 @@ class ConfigManager:
             gauge_max=int(gauge.get("max_value", 36)),
             gauge_title=str(
                 gauge.get("title", "预计可用寿命（月）")
+            ),
+            history_enabled=bool(history.get("enabled", True)),
+            history_db_path=str(
+                history.get("db_path", "data/battery_history.db")
+            ),
+            history_retention_days=int(
+                history.get("retention_days", 30)
+            ),
+            history_buffer_size=int(
+                history.get("buffer_size", 100)
             ),
         )

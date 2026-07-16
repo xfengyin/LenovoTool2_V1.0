@@ -48,15 +48,21 @@ class TestMockDataSource:
             "voltage", "current", "temperature", "rsoc", "soh",
             "fcc", "rm", "dc", "dv", "battery_mode",
             "pl1", "pl2", "pl4", "life_raw", "cycle_count",
+            "cell_voltages",
         ]
         for key in expected_keys:
             assert key in registers
 
     def test_read_all_main_registers_value_types(self):
-        """All values should be int or float."""
+        """All scalar values should be int or float; cell_voltages is a dataclass."""
+        from lenovo_tool.core.data_models import CellVoltage
         source = MockDataSource()
         registers = source.read_all_main_registers()
         for key, value in registers.items():
+            if key == "cell_voltages":
+                # V3.0：cell_voltages 字段为 CellVoltage 数据类，非标量
+                assert isinstance(value, CellVoltage)
+                continue
             assert isinstance(value, (int, float))
 
     def test_read_soh_returns_int_between_40_and_100(self):

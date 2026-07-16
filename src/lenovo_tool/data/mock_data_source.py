@@ -8,6 +8,7 @@ import random
 import threading
 import time
 
+from lenovo_tool.core.data_models import CellVoltage
 from lenovo_tool.core.interfaces import BatteryDataSource
 
 
@@ -29,6 +30,7 @@ class MockDataSource(BatteryDataSource):
         self._rsoc = random.randint(60, 95)
         self._rsoc_dir = -1
         self._cycle_count = random.randint(50, 200)
+        self._tick = 0
 
     def read_int_word(self, addr: int) -> int:
         return self._mock_value(addr)
@@ -93,6 +95,16 @@ class MockDataSource(BatteryDataSource):
         if random.random() < 0.05:
             self._cycle_count += 1
 
+        # 模拟 4 芯电芯电压（围绕基础值波动）
+        self._tick += 1
+        base = 4150 + (self._tick % 50) - 25
+        cell_voltages = CellVoltage(
+            cell1=base + 0,
+            cell2=base + 2,
+            cell3=base - 3,
+            cell4=base + 1,
+        )
+
         return {
             "voltage": voltage,
             "current": current,
@@ -109,6 +121,7 @@ class MockDataSource(BatteryDataSource):
             "pl4": self.read_neg_word(0x62),
             "life_raw": self.read_int_word(0x6A),
             "cycle_count": self._cycle_count,
+            "cell_voltages": cell_voltages,
         }
 
     @staticmethod

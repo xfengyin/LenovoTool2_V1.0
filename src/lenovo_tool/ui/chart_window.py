@@ -1,18 +1,25 @@
 """实时监控图表窗口 — 企业级监控大屏风格。
 
-展示电压、电流、温度、功率、RSOC、SOH 6条实时曲线，
+展示 10 条实时曲线（电压/电流/温度/功率/RSOC/SOH/FCC/RM/电芯压差/FET 温度），
 底部状态栏显示统计信息，整体深色主题一致。
+
+V3.0 变更：
+- 4×3 网格，10 条曲线（保留原有 6 条 + 新增 FCC/RM/电芯压差/FET 温度 4 条）
+- 修复 BUG-03：底部 3 个信息栏接入会话级极值
+- 新增 CSV 导出按钮
 """
 
+import csv
 import time
 from collections import deque
+from datetime import datetime
 
 import pyqtgraph as pg
-from PySide6.QtCore import Qt, Slot, QDateTime
+from PySide6.QtCore import Qt, Slot
 from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QPushButton, QLabel, QFrame, QWidget,
+    QPushButton, QLabel, QFrame, QFileDialog, QMessageBox,
 )
 
 from lenovo_tool.core.data_models import AppConfig, BatterySnapshot
@@ -25,24 +32,48 @@ from lenovo_tool.ui.styles.main_style import (
 
 
 class _StyledChart(QFrame):
-    """单个带统计信息的实时折线图。"""
+    """单个带统计信息的实时折线图，支持会话级极值追踪。
+
+    关键能力：
+    - 内部以 ring buffer 缓存最近 500 个点
+    - 统一对外接口 `add_point(value)`（同时保留 `append` 兼容老代码）
+    - 维护会话级极值（_min_v/_max_v/_min_a/_max_a/_max_temp/_sample_count），
+      任何曲线都会更新 _sample_count，仅电压/电流/温度三类曲线会刷新对应极值
+    - `get_session_stats()` 返回标准 dict，便于底部信息栏聚合展示
+    """
 
     def __init__(
         self,
-        title,
-        unit,
-        y_range,
-        line_color,
+        name: str,
+        title: str,
+        unit: str,
+        y_range: tuple[float, float],
+        line_color: str,
         parent=None,
     ):
         super().__init__(parent)
         self.setObjectName("Card")
+        # === 标识 / 元数据 ===
+        self.name = name          # CSV 列名标识（voltage / current / ...）
         self._unit = unit
         self._line_color = line_color
-        self._values = deque(maxlen=500)
-        self._times = deque(maxlen=500)
-        self._min_val = float("inf")
-        self._max_val = float("-inf")
+
+        # === 滑动窗口数据（500 点 ring buffer）===
+        self._values: deque = deque(maxlen=500)
+        self._times: deque = deque(maxlen=500)
+
+        # === 曲线内显式 min/max（与 UI 显示对应）===
+        self._min_val: float = float("inf")
+        self._max_val: float = float("-inf")
+
+        # === 会话级极值（BUG-03 修复：用于底部信息栏聚合）===
+        # 任何曲线都更新 _sample_count；只有当 self.name 与字段对应时才刷新极值
+        self._min_v: float = float("inf")
+        self._max_v: float = float("-inf")
+        self._min_a: float = float("inf")
+        self._max_a: float = float("-inf")
+        self._max_temp: float = float("-inf")
+        self._sample_count: int = 0
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(8, 6, 8, 6)
@@ -136,24 +167,55 @@ class _StyledChart(QFrame):
 
         outer.addWidget(self._plot)
 
-    def append(self, value):
+    # ------------------------------------------------------------------
+    # 数据写入
+    # ------------------------------------------------------------------
+    def add_point(self, value: float) -> None:
+        """新增一个数据点（统一接口，CSV 导出与新代码请用此方法）。"""
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            return  # 非法值直接忽略，避免污染主流程
+
         now = time.time()
         self._times.append(now)
-        self._values.append(value)
-        self._curve.setData(
-            list(self._times), list(self._values)
-        )
+        self._values.append(v)
+        self._curve.setData(list(self._times), list(self._values))
         if self._values:
-            self._scatter.setData([now], [value])
+            self._scatter.setData([now], [v])
 
-        self._value_lbl.setText(f"{value:,.0f}")
+        self._value_lbl.setText(f"{v:,.0f}")
 
-        self._min_val = min(self._min_val, value)
-        self._max_val = max(self._max_val, value)
+        # 曲线内显式 min/max
+        if v < self._min_val:
+            self._min_val = v
+        if v > self._max_val:
+            self._max_val = v
         self._min_lbl.setText(f"MIN {self._min_val:,.0f}")
         self._max_lbl.setText(f"MAX {self._max_val:,.0f}")
 
-    def clear_data(self):
+        # 会话级极值（BUG-03 修复）
+        self._sample_count += 1
+        if self.name == "voltage":
+            if v < self._min_v:
+                self._min_v = v
+            if v > self._max_v:
+                self._max_v = v
+        elif self.name == "current":
+            if v < self._min_a:
+                self._min_a = v
+            if v > self._max_a:
+                self._max_a = v
+        elif self.name == "temperature":
+            if v > self._max_temp:
+                self._max_temp = v
+
+    # 向后兼容的旧接口（保留以防外部调用方仍在使用）
+    def append(self, value: float) -> None:
+        self.add_point(value)
+
+    def clear_data(self) -> None:
+        """清空全部数据并重置会话极值。"""
         self._values.clear()
         self._times.clear()
         self._curve.clear()
@@ -164,21 +226,73 @@ class _StyledChart(QFrame):
         self._min_lbl.setText("MIN --")
         self._max_lbl.setText("MAX --")
 
+        # 会话级极值重置
+        self._min_v = float("inf")
+        self._max_v = float("-inf")
+        self._min_a = float("inf")
+        self._max_a = float("-inf")
+        self._max_temp = float("-inf")
+        self._sample_count = 0
+
+    # ------------------------------------------------------------------
+    # 会话级统计聚合（BUG-03 修复数据源）
+    # ------------------------------------------------------------------
+    def get_session_stats(self) -> dict[str, float | int | str]:
+        """返回当前图表的会话级极值统计。
+
+        字段：
+        - name: 曲线标识
+        - sample_count: 累计样本数
+        - min_v / max_v: 仅当 name == 'voltage' 时有有效值
+        - min_a / max_a: 仅当 name == 'current' 时有有效值
+        - max_temp:       仅当 name == 'temperature' 时有有效值
+        """
+        return {
+            "name": self.name,
+            "sample_count": self._sample_count,
+            "min_v": self._min_v,
+            "max_v": self._max_v,
+            "min_a": self._min_a,
+            "max_a": self._max_a,
+            "max_temp": self._max_temp,
+        }
+
+    @property
+    def timestamps(self) -> list[float]:
+        """暴露时间戳序列（用于 CSV 导出）。"""
+        return list(self._times)
+
+    @property
+    def values_list(self) -> list[float]:
+        """暴露数值序列（用于 CSV 导出）。"""
+        return list(self._values)
+
 
 class ChartWindow(QDialog):
-    """实时监控图表窗口 — 3x2 布局，6条曲线。"""
+    """实时监控图表窗口 — 4×3 布局，10 条曲线。"""
 
-    def __init__(self, config, parent=None):
+    # CSV 列顺序与 _charts 列表中曲线 name 一一对应
+    _CSV_HEADERS: tuple[str, ...] = (
+        "timestamp",
+        "voltage", "current", "temperature", "power",
+        "rsoc", "soh", "fcc", "rm",
+        "cell_spread", "fet_temp",
+    )
+
+    def __init__(self, config: AppConfig, parent=None):
         super().__init__(parent)
         self._config = config
         self._sample_count = 0
         self.setWindowTitle("实时监控 — 图表")
-        self.setMinimumSize(1100, 750)
-        self.resize(1200, 800)
+        self.setMinimumSize(1280, 820)
+        self.resize(1400, 880)
         self.setStyleSheet(global_stylesheet())
         self._init_ui()
 
-    def _init_ui(self):
+    # ------------------------------------------------------------------
+    # UI 构建
+    # ------------------------------------------------------------------
+    def _init_ui(self) -> None:
         root = QVBoxLayout(self)
         root.setContentsMargins(8, 8, 8, 8)
         root.setSpacing(6)
@@ -211,6 +325,12 @@ class ChartWindow(QDialog):
         )
         header.addWidget(self._time_lbl)
 
+        # === V3.0 新增：CSV 导出按钮 ===
+        export_btn = QPushButton("💾 导出CSV")
+        export_btn.setCursor(Qt.PointingHandCursor)
+        export_btn.clicked.connect(self._on_export_csv)
+        header.addWidget(export_btn)
+
         clear_btn = QPushButton("🔄 清空数据")
         clear_btn.setCursor(Qt.PointingHandCursor)
         clear_btn.clicked.connect(self._clear_all)
@@ -223,42 +343,56 @@ class ChartWindow(QDialog):
 
         root.addLayout(header)
 
-        # 3x2 图表网格
+        # 4×3 图表网格（10 条曲线：6 原有 + 4 新增）
         grid = QGridLayout()
         grid.setSpacing(6)
 
-        self._charts = []
-
+        # 保留原有 6 条 + 新增 4 条 = 10 条
         chart_specs = [
-            ("电压", "mV", self._config.voltage_y_range, "#00e5c8"),
-            ("电流", "mA", self._config.current_y_range, "#ffab40"),
-            ("温度", "℃", (20, 60), "#e040fb"),
-            ("功率", "W", (0, 80), "#ff5252"),
-            ("RSOC", "%", (0, 105), "#448aff"),
-            ("SOH", "%", (40, 105), "#00e676"),
+            # name,        title,   unit,  y_range,                    color
+            ("voltage",     "电压",   "mV", self._config.voltage_y_range, "#00e5c8"),
+            ("current",     "电流",   "mA", self._config.current_y_range, "#ffab40"),
+            ("temperature", "温度",   "℃",  (20, 60),                   "#e040fb"),
+            ("power",       "功率",   "W",  (0, 80),                    "#ff5252"),
+            ("rsoc",        "RSOC",   "%",  (0, 105),                   "#448aff"),
+            ("soh",         "SOH",    "%",  (40, 105),                  "#00e676"),
+            # === V3.0 新增 4 条 ===
+            ("fcc",         "FCC",    "mAh", self._config.fcc_y_range,  "#00e5ff"),
+            ("rm",          "RM",     "mAh", self._config.rm_y_range,   "#3388ff"),
+            ("cell_spread", "电芯压差", "mV", (0, 200),                  "#ffaa00"),
+            ("fet_temp",    "FET 温度", "℃", (0, 120),                  "#aa55ff"),
         ]
 
-        for idx, (title, unit, y_range, color) in enumerate(
-            chart_specs
-        ):
+        # 用 name→chart 的字典保存引用，便于按名字查询（如 CSV 导出、底部信息栏）
+        self._charts: list[_StyledChart] = []
+        self._chart_by_name: dict[str, _StyledChart] = {}
+
+        for idx, (name, c_title, unit, y_range, color) in enumerate(chart_specs):
             chart = _StyledChart(
-                title, unit, y_range, color
+                name=name, title=c_title, unit=unit,
+                y_range=y_range, line_color=color,
             )
             self._charts.append(chart)
-            grid.addWidget(chart, idx // 3, idx % 3)
+            self._chart_by_name[name] = chart
+            # 4 列 × 2 行 = 8 个位置；多于 8 时按 4 列继续向下扩展
+            grid.addWidget(chart, idx // 4, idx % 4)
 
         root.addLayout(grid, stretch=1)
 
-        # 底部信息栏
+        # 底部信息栏（BUG-03 修复：保存 QLabel 引用并实时更新）
         bottom = QHBoxLayout()
         bottom.setSpacing(12)
 
-        for text, color in [
-            ("电压范围: --", "#00e5c8"),
-            ("电流范围: --", "#ffab40"),
-            ("温度峰值: --", "#e040fb"),
+        # 使用占位文本与颜色，文字会在 on_snapshot 中实时刷新
+        self._lbl_v_range = QLabel("电压范围: --")
+        self._lbl_a_range = QLabel("电流范围: --")
+        self._lbl_max_temp = QLabel("温度峰值: --")
+
+        for lbl, color in [
+            (self._lbl_v_range, "#00e5c8"),
+            (self._lbl_a_range, "#ffab40"),
+            (self._lbl_max_temp, "#e040fb"),
         ]:
-            lbl = QLabel(text)
             lbl.setStyleSheet(
                 f"color: {color}; font-size: 10px; "
                 f"font-weight: bold; border: none; "
@@ -269,31 +403,108 @@ class ChartWindow(QDialog):
         bottom.addStretch()
         root.addLayout(bottom)
 
-    def _clear_all(self):
+    # ------------------------------------------------------------------
+    # 操作
+    # ------------------------------------------------------------------
+    def _clear_all(self) -> None:
         for chart in self._charts:
             chart.clear_data()
         self._sample_count = 0
         self._count_lbl.setText("采样: 0")
+        # BUG-03：清空后底部信息栏回到占位
+        self._lbl_v_range.setText("电压范围: --")
+        self._lbl_a_range.setText("电流范围: --")
+        self._lbl_max_temp.setText("温度峰值: --")
 
+    def _on_export_csv(self) -> None:
+        """导出 8 条曲线当前缓冲的数据为 CSV（按时间戳对齐）。"""
+        default_name = (
+            f"battery_chart_"
+            f"{datetime.now():%Y%m%d_%H%M%S}.csv"
+        )
+        path, _ = QFileDialog.getSaveFileName(
+            self, "导出图表数据", default_name, "CSV files (*.csv)"
+        )
+        if not path:
+            return
+
+        # 合并所有曲线的 t/v 对到按时间戳秒级对齐的字典
+        aligned: dict[str, dict[str, float]] = {}
+        for chart in self._charts:
+            for ts, val in zip(chart.timestamps, chart.values_list):
+                ts_key = datetime.fromtimestamp(ts).strftime("%H:%M:%S")
+                aligned.setdefault(ts_key, {})[chart.name] = val
+
+        try:
+            with open(path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerow(list(self._CSV_HEADERS))
+                for ts_key in sorted(aligned.keys()):
+                    row = aligned[ts_key]
+                    writer.writerow(
+                        [ts_key]
+                        + [row.get(n, "") for n in self._CSV_HEADERS[1:]]
+                    )
+        except OSError as exc:
+            QMessageBox.critical(
+                self, "导出失败", f"无法写入 CSV 文件：\n{exc}"
+            )
+            return
+
+        QMessageBox.information(
+            self, "导出完成",
+            f"已导出 {len(aligned)} 条采样点至：\n{path}",
+        )
+
+    # ------------------------------------------------------------------
+    # 数据接入
+    # ------------------------------------------------------------------
     @Slot(BatterySnapshot)
-    def on_snapshot(self, snapshot):
+    def on_snapshot(self, snapshot: BatterySnapshot) -> None:
         self._sample_count += 1
         power = abs(snapshot.voltage * snapshot.current) / 1_000_000
 
-        vals = [
-            float(snapshot.voltage),
-            float(snapshot.current),
-            snapshot.temperature,
-            round(power, 1),
-            float(snapshot.rsoc),
-            float(snapshot.soh),
-        ]
-        for chart, val in zip(self._charts, vals):
-            chart.append(val)
+        # === 原有 6 条 ===
+        self._chart_by_name["voltage"].add_point(float(snapshot.voltage))
+        self._chart_by_name["current"].add_point(float(snapshot.current))
+        self._chart_by_name["temperature"].add_point(snapshot.temperature)
+        self._chart_by_name["power"].add_point(round(power, 1))
+        self._chart_by_name["rsoc"].add_point(float(snapshot.rsoc))
+        self._chart_by_name["soh"].add_point(float(snapshot.soh))
 
-        self._count_lbl.setText(
-            f"采样: {self._sample_count}"
-        )
-        self._time_lbl.setText(
-            snapshot.timestamp.strftime("%H:%M:%S")
-        )
+        # === V3.0 新增 4 条 ===
+        self._chart_by_name["fcc"].add_point(float(snapshot.fcc))
+        self._chart_by_name["rm"].add_point(float(snapshot.rm))
+
+        if snapshot.cell_voltages is not None:
+            self._chart_by_name["cell_spread"].add_point(
+                float(snapshot.cell_voltages.spread)
+            )
+        if snapshot.fet_temperature is not None:
+            self._chart_by_name["fet_temp"].add_point(
+                float(snapshot.fet_temperature)
+            )
+
+        # 顶部信息
+        self._count_lbl.setText(f"采样: {self._sample_count}")
+        self._time_lbl.setText(snapshot.timestamp.strftime("%H:%M:%S"))
+
+        # === BUG-03 修复：底部 3 个 QLabel 实时刷新 ===
+        v_stats = self._chart_by_name["voltage"].get_session_stats()
+        a_stats = self._chart_by_name["current"].get_session_stats()
+        t_stats = self._chart_by_name["temperature"].get_session_stats()
+
+        if v_stats["sample_count"] > 0:
+            self._lbl_v_range.setText(
+                f"电压范围: {v_stats['min_v']:,.0f} ~ "
+                f"{v_stats['max_v']:,.0f} mV"
+            )
+        if a_stats["sample_count"] > 0:
+            self._lbl_a_range.setText(
+                f"电流范围: {a_stats['min_a']:,.0f} ~ "
+                f"{a_stats['max_a']:,.0f} mA"
+            )
+        if t_stats["sample_count"] > 0:
+            self._lbl_max_temp.setText(
+                f"温度峰值: {t_stats['max_temp']:.1f} ℃"
+            )
